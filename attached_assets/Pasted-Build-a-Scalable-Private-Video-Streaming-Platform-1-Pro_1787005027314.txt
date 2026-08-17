@@ -1,0 +1,978 @@
+Build a Scalable Private Video Streaming Platform
+
+1. Project Goal
+
+Build a complete, production-ready web application for managing and streaming a private video library.
+
+The platform should allow an administrator/owner to:
+
+- Create and manage users.
+- Create private groups.
+- Assign users to groups.
+- Upload videos.
+- Import videos from supported external URLs where technically and legally permitted.
+- Organize videos into folders/categories.
+- Manually review every video before publishing.
+- Approve, reject, archive, or delete videos.
+- Stream approved videos to authorized users.
+- Monitor storage usage and video statistics.
+- Prepare the platform for future monetization and advertising.
+
+The application must be designed for scalability.
+
+The initial target is at least 100 GB of video storage, but DO NOT hard-code a 100 GB limit into the application. The storage architecture must allow the owner to expand beyond 100 GB later without rebuilding the application.
+
+Do not store video binary files inside the relational database.
+
+Use a proper object-storage/video-streaming architecture.
+
+---
+
+2. IMPORTANT CONTENT MODERATION REQUIREMENT
+
+DO NOT automatically classify, reject, delete, hide, or block videos based on whether they appear to contain:
+
+- Adult content
+- Nudity
+- Violence
+- Offensive language
+- Sensitive material
+- Any other potentially inappropriate content
+
+There must be NO automatic AI moderation decision that prevents publication.
+
+Every uploaded/imported video must initially enter:
+
+"PENDING_REVIEW"
+
+The owner/admin manually reviews the video and decides what happens.
+
+Available statuses:
+
+- PENDING_REVIEW
+- APPROVED
+- REJECTED
+- PRIVATE
+- ARCHIVED
+- PROCESSING
+- FAILED
+
+Only APPROVED videos should normally be visible to regular members.
+
+The administrator must always be able to override the status manually.
+
+---
+
+3. USER ROLES
+
+Implement role-based access control.
+
+Roles:
+
+OWNER
+
+Full control over the entire platform.
+
+Can:
+
+- Manage administrators.
+- Manage all users.
+- Create/delete groups.
+- Manage all videos.
+- Review videos.
+- Manage storage.
+- Manage platform settings.
+- View analytics.
+- Manage future advertising settings.
+- Change system configuration.
+
+ADMIN
+
+Can be granted configurable permissions by the Owner.
+
+Examples:
+
+- Manage users
+- Manage groups
+- Review videos
+- Manage videos
+- View analytics
+
+Admins must NOT automatically receive Owner permissions.
+
+GROUP_MANAGER
+
+Can manage assigned groups and their content.
+
+MEMBER
+
+Can:
+
+- Login.
+- View groups they belong to.
+- View approved videos available to them.
+- Search videos.
+- Watch videos.
+- Resume watching.
+- Add videos to favorites.
+
+Members cannot:
+
+- Upload videos unless explicitly granted permission.
+- Approve videos.
+- Manage users.
+- See other private groups.
+- Access administrative APIs.
+
+---
+
+4. AUTHENTICATION
+
+Implement secure authentication.
+
+Features:
+
+- Email/password authentication.
+- Secure password hashing.
+- Email verification architecture.
+- Password reset.
+- Session management.
+- Logout.
+- Logout from all devices.
+- Account activation/deactivation.
+
+Prepare the architecture for future:
+
+- Google login
+- Phone authentication
+- Two-factor authentication
+
+Do not require these future features in the first version.
+
+---
+
+5. DEVICE MANAGEMENT
+
+Implement basic device/session management.
+
+For every active session, store:
+
+- User
+- Device/session identifier
+- Last activity
+- Created date
+- Approximate device/browser information
+
+The user should be able to log out from all other sessions.
+
+The Owner should be able to terminate suspicious sessions.
+
+Prepare the system so a future plan can limit the number of active devices per account.
+
+---
+
+6. GROUP SYSTEM
+
+Groups are private content spaces.
+
+Each group can have:
+
+- Name
+- Description
+- Cover image
+- Status
+- Created date
+- Owner
+- Members
+- Categories
+- Videos
+
+Group visibility:
+
+- PRIVATE
+- ACTIVE
+- SUSPENDED
+
+Users should ONLY see groups they are authorized to access.
+
+Implement many-to-many membership:
+
+User ↔ Groups
+
+A user can belong to multiple groups.
+
+A group can contain multiple users.
+
+---
+
+7. VIDEO LIBRARY
+
+Every video must have metadata.
+
+Fields:
+
+- ID
+- Title
+- Description
+- Thumbnail
+- Duration
+- File size
+- Storage provider
+- Storage object ID
+- Streaming ID
+- Source URL if imported
+- Source provider
+- Group
+- Category
+- Uploaded by
+- Upload date
+- Last modified
+- Status
+- View count
+- Last viewed
+- Processing status
+
+Video categories should be customizable.
+
+Example:
+
+- Training
+- Education
+- Entertainment
+- Events
+- Other
+
+Do NOT hard-code these categories.
+
+The Owner should be able to create custom categories.
+
+---
+
+8. VIDEO UPLOAD
+
+Implement video upload through the web application.
+
+Requirements:
+
+- Large file upload support.
+- Upload progress.
+- Cancel upload.
+- Retry failed upload.
+- Resume upload where supported.
+- Validate file type.
+- Validate file size.
+- Generate thumbnail where possible.
+- Store metadata separately from the video file.
+
+Do not put large video files inside the database.
+
+Use object storage/video streaming infrastructure.
+
+The initial target storage capacity is 100 GB or more.
+
+The architecture must allow storage expansion without changing application logic.
+
+---
+
+9. VIDEO IMPORT FROM URL
+
+Create a feature:
+
+"Import Video From URL"
+
+The administrator can paste a video URL.
+
+Example supported providers may include:
+
+- YouTube
+- X
+- LinkedIn
+- Facebook
+- Instagram
+- TikTok
+- Direct video URLs
+- Other technically supported providers
+
+Do not promise universal compatibility.
+
+The system must first detect the provider.
+
+Architecture:
+
+URL
+→ Provider Detection
+→ Supported?
+→ Extract/Import
+→ Download/Transfer where permitted
+→ Process
+→ Store
+→ PENDING_REVIEW
+
+If a provider is unsupported:
+
+Return a clear error:
+
+"This video source is currently unsupported."
+
+If the URL requires authentication, DRM, or access that the system cannot legally/technically obtain, do not attempt to bypass it.
+
+Never bypass:
+
+- DRM
+- Paywalls
+- Authentication
+- Access controls
+- Copyright protection mechanisms
+
+Only process content that the platform/user is authorized to import.
+
+Use a modular provider architecture so new providers can be added later without rewriting the application.
+
+---
+
+10. MANUAL VIDEO REVIEW
+
+Create a dedicated:
+
+"Review Queue"
+
+The Owner/Admin should see:
+
+- Thumbnail
+- Title
+- Duration
+- File size
+- Source
+- Uploader
+- Upload date
+- Processing state
+- Current status
+
+Actions:
+
+- APPROVE
+- REJECT
+- PRIVATE
+- ARCHIVE
+- DELETE
+
+Add optional review notes.
+
+Add reviewer name and review timestamp.
+
+The review history must be stored.
+
+The system must NEVER automatically reject a video because an AI model thinks it is inappropriate.
+
+---
+
+11. VIDEO PLAYER
+
+Create a professional responsive video player.
+
+Requirements:
+
+- Play/pause
+- Seek
+- Volume
+- Fullscreen
+- Playback speed
+- Quality selection where supported
+- Picture-in-picture where supported
+- Continue watching
+- Resume from last position
+
+Use adaptive streaming where supported.
+
+Do not expose raw storage credentials.
+
+Use secure/signed playback URLs where supported.
+
+---
+
+12. WATCH HISTORY
+
+For every member, track:
+
+- Video
+- Last position
+- Duration watched
+- Percentage watched
+- Last watched date
+
+Create:
+
+"Continue Watching"
+
+on the member dashboard.
+
+Do not count every tiny playback event as a view.
+
+Implement sensible view tracking to prevent obvious accidental inflation.
+
+---
+
+13. FAVORITES
+
+Members can:
+
+- Add video to favorites.
+- Remove video from favorites.
+- View favorite videos.
+
+Favorites must respect group permissions.
+
+---
+
+14. SEARCH
+
+Implement global search within content the user is authorized to see.
+
+Search by:
+
+- Video title
+- Description
+- Category
+- Group
+- Tags
+
+Never return videos from unauthorized groups.
+
+---
+
+15. ADMIN DASHBOARD
+
+Create a professional dashboard.
+
+Display:
+
+- Total users
+- Active users
+- Total groups
+- Total videos
+- Pending reviews
+- Approved videos
+- Rejected videos
+- Storage used
+- Storage remaining if provider exposes it
+- Total views
+- Recent activity
+- Recent uploads
+- Failed processing jobs
+
+Use clear charts and statistics.
+
+---
+
+16. STORAGE ARCHITECTURE
+
+This is extremely important.
+
+Do NOT make the database responsible for storing video files.
+
+Create a storage abstraction layer.
+
+Example:
+
+"VideoStorageProvider"
+
+Possible providers:
+
+- Cloudflare Stream
+- Cloudflare R2
+- S3-compatible storage
+- Other compatible object storage
+
+The application should communicate with storage through a provider abstraction.
+
+This means storage can be changed later without rewriting the entire application.
+
+Initial target:
+
+">= 100 GB"
+
+Future target:
+
+"100 GB → 500 GB → 1 TB+"
+
+Do not hard-code a maximum storage limit.
+
+Display storage usage in the Admin dashboard.
+
+---
+
+17. DATABASE DESIGN
+
+Use a relational database.
+
+Recommended tables/entities:
+
+- users
+- roles
+- permissions
+- user_roles
+- groups
+- group_members
+- categories
+- videos
+- video_categories
+- video_tags
+- video_reviews
+- video_views
+- watch_progress
+- favorites
+- sessions/devices
+- upload_jobs
+- import_jobs
+- storage_objects
+- audit_logs
+- system_settings
+- advertisements (future)
+- subscription_plans (future)
+
+Use foreign keys and indexes properly.
+
+Do not duplicate information unnecessarily.
+
+---
+
+18. SECURITY
+
+Implement:
+
+- Authentication
+- Authorization
+- Role-based access control
+- Server-side permission checks
+- Input validation
+- Rate limiting
+- Secure sessions
+- CSRF protection where applicable
+- XSS protection
+- SQL injection protection
+- Secure file handling
+- File type validation
+- Signed video URLs where supported
+- No exposed storage credentials
+- Audit logging
+
+Never rely only on frontend permissions.
+
+Every protected operation must also be checked server-side.
+
+---
+
+19. AUDIT LOG
+
+Create an audit log.
+
+Record important actions such as:
+
+- Login
+- Logout
+- User creation
+- User deletion
+- Group creation
+- Group membership change
+- Video upload
+- Video import
+- Video approval
+- Video rejection
+- Video deletion
+- Permission changes
+- Administrative changes
+
+Store:
+
+- User
+- Action
+- Target
+- Timestamp
+- Relevant metadata
+
+---
+
+20. FUTURE MONETIZATION
+
+Do NOT activate monetization in the first version.
+
+However, design the architecture so we can later add:
+
+- Subscription plans
+- Premium groups
+- Premium users
+- Advertisements
+- Banner ads
+- Pre-roll ads
+- Ad-free plans
+- Payment providers
+
+Create the database architecture for these features but keep them disabled initially.
+
+Do not add fake payment functionality.
+
+---
+
+21. FUTURE ADVERTISING SYSTEM
+
+Prepare an "advertisements" entity.
+
+Potential fields:
+
+- ID
+- Title
+- Media
+- Target URL
+- Placement
+- Start date
+- End date
+- Status
+- Impression count
+- Click count
+
+Possible placements:
+
+- Dashboard
+- Group page
+- Video page
+- Before video
+- After video
+
+Keep this disabled until explicitly enabled by Owner.
+
+---
+
+22. UI/UX
+
+Create a professional modern interface.
+
+The application must be:
+
+- Mobile-first
+- Responsive
+- Fast
+- Clean
+- Simple
+- Arabic-friendly
+- RTL-ready
+
+Default language:
+
+Arabic.
+
+Architecture must support English later.
+
+Use a consistent design system.
+
+Do not create unnecessary animations.
+
+Prioritize usability and speed.
+
+---
+
+23. MEMBER DASHBOARD
+
+Create:
+
+- Home
+- My Groups
+- Recently Added
+- Continue Watching
+- Favorites
+- Search
+- Profile
+- Devices/Sessions
+
+Only show content the member has permission to access.
+
+---
+
+24. ADMIN NAVIGATION
+
+Create:
+
+- Dashboard
+- Users
+- Groups
+- Videos
+- Review Queue
+- Categories
+- Imports
+- Uploads
+- Storage
+- Analytics
+- Audit Logs
+- Settings
+- Advertising (disabled initially)
+- Subscriptions (disabled initially)
+
+---
+
+25. ERROR HANDLING
+
+Every important operation must have useful errors.
+
+Examples:
+
+- Upload failed
+- Import failed
+- Unsupported URL
+- Processing failed
+- Unauthorized access
+- Storage unavailable
+- Invalid file
+- Session expired
+
+Do not expose internal stack traces to normal users.
+
+Log technical errors server-side.
+
+---
+
+26. BACKGROUND JOBS
+
+Video processing and URL importing must NOT block the main web request.
+
+Create a background-job architecture.
+
+Examples:
+
+- upload processing
+- video transcoding
+- thumbnail generation
+- URL import
+- metadata extraction
+- storage synchronization
+
+Show job status:
+
+- QUEUED
+- PROCESSING
+- COMPLETED
+- FAILED
+
+---
+
+27. SCALABILITY
+
+Do not build the application assuming only a few users.
+
+Use:
+
+- Pagination
+- Database indexes
+- Lazy loading
+- Efficient queries
+- CDN/video streaming
+- Background jobs
+- Caching where appropriate
+- Storage abstraction
+- Stateless backend architecture where practical
+
+Do not load an entire video library into memory.
+
+Do not load all users at once.
+
+Do not load all videos at once.
+
+---
+
+28. PRIVACY
+
+Private groups must remain private.
+
+A member must never be able to access a video simply by guessing its URL.
+
+Every playback request must verify authorization.
+
+Signed/temporary playback URLs should be used when supported by the video provider.
+
+---
+
+29. OWNER SETTINGS
+
+Create settings for:
+
+- Platform name
+- Logo
+- Default language
+- Registration enabled/disabled
+- Default user role
+- Maximum devices
+- Video import enabled/disabled
+- Upload enabled/disabled
+- Advertising enabled/disabled
+- Maintenance mode
+
+---
+
+30. DEVELOPMENT REQUIREMENTS
+
+Use a clean project architecture.
+
+Separate:
+
+- Frontend
+- Backend
+- Database
+- Storage
+- Authentication
+- Video processing
+- Import providers
+- Background jobs
+
+Write reusable components.
+
+Do not put the entire application in one file.
+
+Use environment variables for:
+
+- Database credentials
+- API keys
+- Storage credentials
+- Authentication secrets
+- Video provider credentials
+
+Never hard-code secrets.
+
+Create ".env.example".
+
+---
+
+31. TESTING
+
+Before declaring the project complete, test:
+
+- Registration
+- Login
+- Logout
+- Password reset architecture
+- Role permissions
+- Group permissions
+- Video upload
+- Video processing
+- Video approval
+- Video rejection
+- Video playback
+- Unauthorized playback
+- Search
+- Favorites
+- Watch progress
+- Device sessions
+- Admin functions
+- Storage errors
+- Import errors
+- Mobile responsiveness
+
+Create automated tests for critical backend functionality.
+
+---
+
+32. DEVELOPMENT PROCESS
+
+Do NOT attempt to generate the entire project blindly in one step.
+
+First enter planning mode.
+
+Analyze this specification and produce:
+
+1. Architecture
+2. Technology stack
+3. Database schema
+4. API design
+5. Storage design
+6. Authentication design
+7. Video-processing design
+8. Import-provider architecture
+9. Security model
+10. Development phases
+
+Then ask for confirmation before making irreversible infrastructure decisions.
+
+After confirmation, implement in phases.
+
+After every major phase:
+
+1. Run tests.
+2. Check for errors.
+3. Fix errors.
+4. Verify the application.
+5. Continue to the next phase.
+
+Do not stop after generating UI mockups.
+
+The final application must actually work end-to-end.
+
+---
+
+33. IMPORTANT LIMITATIONS
+
+Do not claim that the application can import videos from every website.
+
+External video importing must respect:
+
+- Website terms
+- Copyright
+- Authentication requirements
+- DRM
+- Technical restrictions
+
+Do not implement DRM bypassing or access-control bypassing.
+
+The system should gracefully report unsupported sources.
+
+---
+
+34. FIRST VERSION PRIORITIES
+
+Prioritize working functionality over unnecessary visual features.
+
+Priority order:
+
+1. Authentication
+2. Database
+3. User roles
+4. Groups
+5. Video storage
+6. Video upload
+7. Manual review
+8. Secure video playback
+9. Member dashboard
+10. Admin dashboard
+11. Search
+12. Watch history
+13. Favorites
+14. URL import architecture
+15. Analytics
+16. Future monetization architecture
+
+---
+
+35. FINAL ACCEPTANCE CRITERIA
+
+Do not consider the project complete merely because the UI looks finished.
+
+The project is complete only when:
+
+- An Owner can create users.
+- An Owner can create Groups.
+- Users can be assigned to Groups.
+- A video can be uploaded.
+- The video enters PENDING_REVIEW.
+- Owner can manually review it.
+- Owner can approve it.
+- Approved video becomes available to authorized members.
+- Unauthorized members cannot access it.
+- Video can be streamed.
+- Watch progress works.
+- Search works.
+- Favorites work.
+- Storage usage is visible.
+- The architecture supports at least 100 GB and can scale beyond that.
+- No automatic content moderation blocks videos.
+- External URL importing is modular and only works with supported/permitted sources.
+- Critical security checks happen server-side.
+- Errors are handled properly.
+- The application works on mobile and desktop.
+
+Start by analyzing this specification and proposing the exact architecture and technology stack before implementation.
