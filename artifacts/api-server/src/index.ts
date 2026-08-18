@@ -1,25 +1,20 @@
-import app from "./app";
-import { logger } from "./lib/logger";
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 
-const rawPort = process.env["PORT"];
+const app = express();
+app.use(cors());
+app.use(cookieParser());
+app.use(express.json());
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
+// Minimal health endpoint. We intentionally do not import generated Zod schemas here
+// to avoid depending on Orval outputs that are not yet generated.
+app.get("/api/healthz", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
-
-  logger.info({ port }, "Server listening");
+const port = process.env.PORT ? Number(process.env.PORT) : 5000;
+app.listen(port, () => {
+  // eslint-disable-next-line no-console
+  console.log(`API server listening on http://localhost:${port}`);
 });
