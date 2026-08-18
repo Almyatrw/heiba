@@ -1,16 +1,25 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import { HealthCheckResponse } from "@workspace/api-zod";
 
 const app = express();
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 
-// Minimal health endpoint. We intentionally do not import generated Zod schemas here
-// to avoid depending on Orval outputs that are not yet generated.
+// Minimal health endpoint validated by generated Zod schema (if present)
 app.get("/api/healthz", (_req, res) => {
-  res.json({ status: "ok" });
+  const payload = { status: "ok" };
+  // Validate payload using generated schema; if schema parse throws, return 500
+  try {
+    const parsed = HealthCheckResponse.parse(payload);
+    res.json(parsed);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Health check validation failed:", err);
+    res.status(500).json({ error: "schema validation failed" });
+  }
 });
 
 const port = process.env.PORT ? Number(process.env.PORT) : 5000;
