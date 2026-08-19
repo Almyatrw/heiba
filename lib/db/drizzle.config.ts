@@ -1,10 +1,10 @@
-const config = {
+import { defineConfig } from "drizzle-kit";
+
+export default defineConfig({
   schema: "./src/schema",
   out: "./drizzle",
-  driver: "pg",
+  dialect: "postgresql",
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL ?? "postgres://localhost:5432/heiba",
+    url: process.env.DATABASE_URL ?? "postgres://localhost:5432/heiba",
   },
-};
-
-export default config;
+});

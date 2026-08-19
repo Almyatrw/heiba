@@ -6,8 +6,8 @@ import { usersTable } from "./users";
 export const sessionsTable = pgTable(
   "sessions",
   {
-    id: bigserial("id").primaryKey(),
-    user_id: bigint("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    user_id: bigint("user_id", { mode: "number" }).notNull().references(() => usersTable.id, { onDelete: "cascade" }),
     session_token_hash: text("session_token_hash").notNull(),
     device_id: text("device_id"),
     device_info: text("device_info"),
@@ -18,14 +18,14 @@ export const sessionsTable = pgTable(
     revoked: boolean("revoked").notNull().default(false),
     revoked_at: timestamp("revoked_at", { withTimezone: true }),
   },
-  (t) => ({
-    unique_token_hash: uniqueIndex(t.session_token_hash),
-    idx_user: index(t.user_id),
-    idx_expires: index(t.expires_at),
-  }),
+  (t) => [
+    uniqueIndex("sessions_unique_token_hash").on(t.session_token_hash),
+    index("sessions_idx_user").on(t.user_id),
+    index("sessions_idx_expires").on(t.expires_at),
+  ],
 );
 
 export const insertSessionSchema = createInsertSchema(sessionsTable).omit({ id: true, created_at: true, last_used_at: true });
 
-export type InsertSession = typeof insertSessionSchema._type;
+export type InsertSession = typeof sessionsTable.$inferInsert;
 export type Session = typeof sessionsTable.$inferSelect;

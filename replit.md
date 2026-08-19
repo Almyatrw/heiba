@@ -1,15 +1,15 @@
-# [Project name]
+# Heiba
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Private, scalable video streaming platform: an owner-managed library where videos are uploaded or imported, manually reviewed, and streamed only to authorized group members.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000, or `$PORT`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` — Postgres connection string (see `.env.example`)
 
 ## Stack
 
@@ -22,23 +22,36 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/api-server` — Express API (`src/index.ts` entry → `src/app.ts` → `src/routes/`), health endpoint at `/api/healthz`
+- `lib/api-spec/openapi.yaml` — source of truth for API contracts; Orval config in `orval.config.ts`
+- `lib/api-zod` — generated Zod schemas (`src/generated/`), consumed by the server for response validation
+- `lib/api-client-react` — generated React Query hooks + `src/custom-fetch.ts` mutator (generic `customFetch<T>`, exports `ErrorType`)
+- `lib/db` — Drizzle schema (`src/schema/`: users, groups, user_groups, videos, sessions) + `drizzle.config.ts`
+- `artifacts/mockup-sandbox` — Vite/React sandbox for UI mockups
+- Full product spec: `attached_assets/Pasted-Build-a-Scalable-Private-Video-Streaming-Platform-1-Pro_1787005027314.txt`
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Phase 0 DB scope is the core identity/content skeleton: users, groups, user_groups (M2M membership), videos (metadata only — no binaries in DB), sessions (token hashes, never raw tokens). Remaining spec entities (categories, reviews, watch progress, jobs, audit logs, monetization placeholders) land in later phases.
+- `user_role` enum covers all spec roles (OWNER/ADMIN/GROUP_MANAGER/MEMBER); `video_status` covers the full lifecycle incl. PRIVATE/ARCHIVED/FAILED. No automatic moderation statuses — every new video enters PENDING_REVIEW after PROCESSING.
+- bigint columns use `{ mode: "number" }` (safe up to 2^53, keeps IDs JSON-friendly).
+- API contracts are defined once in OpenAPI and codegen'd to both server-side Zod validators and client React Query hooks — never hand-write either side.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Phase 0 (current): workspace scaffold, health endpoint validated by generated Zod schema, core DB schema verified against live Postgres. No user-facing features yet.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Do not push to remote unless explicitly asked.
+- Work in phases; fully verify each phase (typecheck, build, codegen, DB push, server smoke) before starting the next.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- pnpm 11 writes an `allowBuilds` placeholder into `pnpm-workspace.yaml` when a build script is ignored; keep `allowBuilds: { esbuild: true }` set or nested installs (e.g. codegen's dep check) fail.
+- drizzle-orm 0.45 requires `{ mode }` on `bigint`/`bigserial` and named index builders (`index("name").on(col)`); table extra config uses the array form.
+- `mockup-sandbox` vite config requires `PORT`/`BASE_PATH` only for `vite dev`/`preview`, not for `vite build`.
+- `lib/db/src/index.ts` throws at import time if `DATABASE_URL` is unset.
 
 ## Pointers
 
