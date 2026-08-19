@@ -4,6 +4,7 @@ export * from "./users";
 export * from "./groups";
 export * from "./user_groups";
 export * from "./videos";
+export * from "./video_uploads";
 export * from "./sessions";
 export * from "./categories";
 export * from "./video_categories";

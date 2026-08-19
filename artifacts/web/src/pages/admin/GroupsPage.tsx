@@ -26,6 +26,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { apiErrorMessage } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 
 function MembersModal({ group, onClose }: { group: Group; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -34,6 +35,7 @@ function MembersModal({ group, onClose }: { group: Group; onClose: () => void })
   const addMember = useAddGroupMember();
   const updateMember = useUpdateGroupMember();
   const removeMember = useRemoveGroupMember();
+  const t = useT();
   const [userId, setUserId] = useState<number | "">("");
   const [error, setError] = useState<string | null>(null);
 
@@ -56,12 +58,12 @@ function MembersModal({ group, onClose }: { group: Group; onClose: () => void })
       setUserId("");
       await invalidate();
     } catch (err) {
-      setError(apiErrorMessage(err, "Could not add member"));
+      setError(apiErrorMessage(err, t("groups.addMemberFailed")));
     }
   };
 
   return (
-    <Modal title={`Members — ${group.name}`} onClose={onClose} wide>
+    <Modal title={t("groups.membersTitle", { name: group.name })} onClose={onClose} wide>
       <div className="space-y-4">
         <div className="flex gap-2">
           <Select
@@ -70,7 +72,7 @@ function MembersModal({ group, onClose }: { group: Group; onClose: () => void })
               setUserId(e.target.value ? Number(e.target.value) : "")
             }
           >
-            <option value="">Add a member…</option>
+            <option value="">{t("groups.addMember")}</option>
             {candidates.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.email} ({u.role})
@@ -81,7 +83,7 @@ function MembersModal({ group, onClose }: { group: Group; onClose: () => void })
             disabled={userId === "" || addMember.isPending}
             onClick={() => void add()}
           >
-            Add
+            {t("common.add")}
           </Button>
         </div>
         {error ? <p className="text-sm text-danger">{error}</p> : null}
@@ -89,7 +91,7 @@ function MembersModal({ group, onClose }: { group: Group; onClose: () => void })
         {members.isLoading ? (
           <Spinner />
         ) : (members.data?.members ?? []).length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted">No members yet.</p>
+          <p className="py-6 text-center text-sm text-muted">{t("groups.noMembers")}</p>
         ) : (
           <ul className="divide-y divide-line rounded-xl border border-line">
             {(members.data?.members ?? []).map((m) => (
@@ -97,7 +99,7 @@ function MembersModal({ group, onClose }: { group: Group; onClose: () => void })
                 <div className="min-w-0">
                   <div className="truncate text-sm text-bone">{m.email}</div>
                   <div className="font-mono text-[10px] text-muted">
-                    {m.role} · joined {new Date(m.joinedAt).toLocaleDateString()}
+                    {t(`role.${m.role}`)} · {t("groups.joined", { date: new Date(m.joinedAt).toLocaleDateString() })}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -113,8 +115,8 @@ function MembersModal({ group, onClose }: { group: Group; onClose: () => void })
                       await invalidate();
                     }}
                   >
-                    <option value="member">member</option>
-                    <option value="manager">manager</option>
+                    <option value="member">{t("groups.memberRole")}</option>
+                    <option value="manager">{t("groups.managerRole")}</option>
                   </Select>
                   <Button
                     variant="quiet"
@@ -138,6 +140,7 @@ function MembersModal({ group, onClose }: { group: Group; onClose: () => void })
 
 export default function GroupsPage() {
   const queryClient = useQueryClient();
+  const t = useT();
   const groups = useListGroups({ limit: 100 });
   const [editing, setEditing] = useState<Group | "new" | null>(null);
   const [membersFor, setMembersFor] = useState<Group | null>(null);
@@ -175,12 +178,12 @@ export default function GroupsPage() {
       await invalidate();
       setEditing(null);
     } catch (err) {
-      setError(apiErrorMessage(err, "Save failed"));
+      setError(apiErrorMessage(err, t("common.saveFailed")));
     }
   };
 
   const removeGroup = async (id: number) => {
-    if (!confirm("Delete this group? Videos keep their other access groups.")) return;
+    if (!confirm(t("groups.deleteConfirm"))) return;
     await remove.mutateAsync({ id });
     await invalidate();
   };
@@ -190,11 +193,11 @@ export default function GroupsPage() {
   return (
     <div className="rise">
       <PageHeader
-        kicker="Manage"
-        title="Groups"
+        kicker={t("nav.manage")}
+        title={t("groups.title")}
         actions={
           <Button onClick={() => open("new")}>
-            <Plus className="h-4 w-4" /> New group
+            <Plus className="h-4 w-4" /> {t("groups.new")}
           </Button>
         }
       />
@@ -202,11 +205,11 @@ export default function GroupsPage() {
         <Spinner />
       ) : items.length === 0 ? (
         <EmptyState
-          title="No groups yet"
-          body="Groups control who can watch what. Videos are private by default."
+          title={t("groups.emptyTitle")}
+          body={t("groups.emptyBody")}
           action={
             <Button onClick={() => open("new")}>
-              <Plus className="h-4 w-4" /> Create the first group
+              <Plus className="h-4 w-4" /> {t("groups.createFirst")}
             </Button>
           }
         />
@@ -223,11 +226,11 @@ export default function GroupsPage() {
                     <p className="mt-1 text-sm text-muted">{g.description}</p>
                   ) : null}
                   <Badge tone="neutral" className="mt-3">
-                    {g.memberCount} {g.memberCount === 1 ? "member" : "members"}
+                    {t("groups.memberCount", { count: g.memberCount })}
                   </Badge>
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <Button variant="quiet" className="px-2" onClick={() => setMembersFor(g)} title="Manage members">
+                  <Button variant="quiet" className="px-2" onClick={() => setMembersFor(g)} title={t("groups.manageMembers")}>
                     <Users className="h-4 w-4" />
                   </Button>
                   <Button variant="quiet" className="px-2" onClick={() => open(g)}>
@@ -249,14 +252,14 @@ export default function GroupsPage() {
 
       {editing ? (
         <Modal
-          title={editing === "new" ? "New group" : `Edit ${editing.name}`}
+          title={editing === "new" ? t("groups.new") : t("groups.edit", { name: editing.name })}
           onClose={() => setEditing(null)}
         >
           <div className="space-y-4">
-            <Field label="Name">
+            <Field label={t("groups.fieldName")}>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
-            <Field label="Description (optional)">
+            <Field label={`${t("groups.fieldDescription")} (${t("common.optional")})`}>
               <Textarea
                 rows={2}
                 value={description}
@@ -266,13 +269,13 @@ export default function GroupsPage() {
             {error ? <p className="text-sm text-danger">{error}</p> : null}
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setEditing(null)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 disabled={!name.trim() || create.isPending || update.isPending}
                 onClick={() => void save()}
               >
-                Save
+                {t("common.save")}
               </Button>
             </div>
           </div>

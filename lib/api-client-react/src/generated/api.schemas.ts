@@ -327,6 +327,53 @@ export type UploadVideoFileBody = {
   file: Blob;
 };
 
+export type ImportVideoBody = {
+  url: string;
+};
+
+export type GetUploadCapabilities200 = {
+  directUploadSupported: boolean;
+  maxBytes: number;
+  multipartPartSize: number;
+  singlePutLimit: number;
+};
+
+export type CreateDirectUploadBody = {
+  /** @minimum 1 */
+  sizeBytes: number;
+  mimeType: string;
+  fileName: string;
+};
+
+export type CreateDirectUpload200Mode = typeof CreateDirectUpload200Mode[keyof typeof CreateDirectUpload200Mode];
+
+
+export const CreateDirectUpload200Mode = {
+  single: 'single',
+  multipart: 'multipart',
+} as const;
+
+export type CreateDirectUpload200PartsItem = {
+  partNumber: number;
+  url: string;
+};
+
+export type CreateDirectUpload200 = {
+  uploadId: number;
+  mode: CreateDirectUpload200Mode;
+  url?: string;
+  parts: CreateDirectUpload200PartsItem[];
+};
+
+export type CompleteDirectUploadBodyPartsItem = {
+  partNumber: number;
+  etag: string;
+};
+
+export type CompleteDirectUploadBody = {
+  parts?: CompleteDirectUploadBodyPartsItem[];
+};
+
 export type ListPendingReviewsParams = {
 /**
  * @minimum 1

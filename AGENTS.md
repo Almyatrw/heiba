@@ -16,6 +16,8 @@ Private video streaming platform. Monorepo: pnpm workspaces, Node 24, TS 5.9.
 - Videos are private by default. Visibility is derived: APPROVED + shares a group with the member. `src/lib/video-library.ts` holds the shared helpers (memberGroupIds, getVideoOr404, serializeVideo).
 - Upload race: busboy `finish` fires when parsing completes, not when the async storage write finishes — the upload promise must only settle on storage success/failure (see `src/lib/uploads.ts`).
 - Storage default dir is `storage` (files land at `storage/videos/<id>/<uuid>.<ext>`); do not reintroduce `storage/videos` as the default.
+- Storage providers: local (default) and R2 (S3-compatible, `VIDEO_STORAGE_PROVIDER=r2` + `R2_*`). Direct browser uploads go through presigned URLs tracked in `video_uploads`; local provider intentionally reports `directUploadSupported=false` and the SPA falls back to the proxy upload. Never bypass the `VideoStorage` interface from business logic.
+- URL import: `src/lib/import.ts` provider registry. Direct http(s) file URLs actually download into storage; YouTube/socials are recognised stubs that never fetch. Import failures must delete the partial storage object.
 - Frontend talks to `/api` same-origin. Dev: Vite proxies to the API server. Prod: API server serves `WEB_DIST` with SPA fallback.
 - orval v8 generated hooks require `queryKey` in `query` overrides — always pass `get<Op>QueryKey(...)` alongside `enabled`/`retry` overrides.
 - Dev DB seeded users: owner@heiba.local (OWNER), member@heiba.local (MEMBER, in group "Alpha Team").

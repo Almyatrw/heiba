@@ -7,6 +7,7 @@ import type {
   ReactNode,
   TextareaHTMLAttributes,
 } from "react";
+import { useT } from "@/lib/i18n";
 
 export function Button({
   className,
@@ -126,17 +127,18 @@ export function Badge({
 }
 
 export function StatusBadge({ status }: { status: string }) {
+  const t = useT();
   switch (status) {
     case "APPROVED":
-      return <Badge tone="moss">Approved</Badge>;
+      return <Badge tone="moss">{t("status.APPROVED")}</Badge>;
     case "PENDING_REVIEW":
-      return <Badge tone="ember">Pending review</Badge>;
+      return <Badge tone="ember">{t("status.PENDING_REVIEW")}</Badge>;
     case "REJECTED":
-      return <Badge tone="danger">Rejected</Badge>;
+      return <Badge tone="danger">{t("status.REJECTED")}</Badge>;
     case "PRIVATE":
-      return <Badge>Private</Badge>;
+      return <Badge>{t("status.PRIVATE")}</Badge>;
     case "PROCESSING":
-      return <Badge tone="dim">Processing</Badge>;
+      return <Badge tone="dim">{t("status.PROCESSING")}</Badge>;
     default:
       return <Badge tone="dim">{status}</Badge>;
   }

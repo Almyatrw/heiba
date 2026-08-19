@@ -2,6 +2,7 @@ import { Route, Switch, Redirect, useLocation } from "wouter";
 import { isAdmin, useAuth } from "@/lib/auth";
 import { Layout } from "@/components/Layout";
 import { Spinner } from "@/components/ui";
+import { useT } from "@/lib/i18n";
 import LoginPage from "@/pages/LoginPage";
 import LibraryPage from "@/pages/LibraryPage";
 import WatchPage from "@/pages/WatchPage";
@@ -14,8 +15,9 @@ import CategoriesPage from "@/pages/admin/CategoriesPage";
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const t = useT();
 
-  if (isLoading) return <Spinner label="Opening the screening room…" />;
+  if (isLoading) return <Spinner label={t("app.opening")} />;
   if (!user) {
     setLocation("/login");
     return null;

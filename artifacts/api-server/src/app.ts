@@ -29,7 +29,29 @@ app.use(
     },
   }),
 );
-app.use(cors({ origin: true, credentials: true }));
+// CORS: production deployments are same-origin, so no cross-origin access is
+// needed. An explicit ALLOWED_ORIGINS env list can opt back in; in development
+// localhost origins are allowed for the Vite dev server.
+const isProduction = process.env.NODE_ENV === "production";
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    credentials: true,
+    origin(origin, callback) {
+      if (!origin) return callback(null, true); // same-origin / curl
+      if (allowedOrigins.length > 0) {
+        return callback(null, allowedOrigins.includes(origin));
+      }
+      if (!isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

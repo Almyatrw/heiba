@@ -13,3 +13,8 @@ export const video_status = pgEnum("video_status", [
 ]);
 export const review_action = pgEnum("review_action", ["APPROVED", "REJECTED"]);
 export const group_role = pgEnum("group_role", ["manager", "member"]);
+export const video_upload_status = pgEnum("video_upload_status", [
+  "INITIATED",
+  "COMPLETED",
+  "ABORTED",
+]);

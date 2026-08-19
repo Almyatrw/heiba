@@ -9,11 +9,13 @@ import {
 import { Badge, Spinner } from "@/components/ui";
 import { formatBytes, formatDate, formatDuration, streamUrl } from "@/lib/format";
 import { isAdmin, useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 
 export default function WatchPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const { user } = useAuth();
+  const t = useT();
   // Admins can preview any video (incl. unapproved); members use the library
   // endpoint which 404s anything not shared with them.
   const adminView = useGetVideo(id, {
@@ -24,7 +26,7 @@ export default function WatchPage() {
   });
   const video = isAdmin(user) ? adminView : memberView;
 
-  if (video.isLoading) return <Spinner label="Dimming the lights…" />;
+  if (video.isLoading) return <Spinner label={t("watch.loading")} />;
 
   if (!video.data) {
     return (
@@ -33,12 +35,12 @@ export default function WatchPage() {
           href="/"
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted hover:text-bone"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to library
+          <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" /> {t("watch.back")}
         </Link>
         <div className="rounded-2xl border border-dashed border-line py-24 text-center">
-          <p className="font-display text-2xl text-bone">Reel not found</p>
+          <p className="font-display text-2xl text-bone">{t("watch.notFoundTitle")}</p>
           <p className="mt-2 text-sm text-muted">
-            This title is unavailable or not shared with you.
+            {t("watch.notFoundBody")}
           </p>
         </div>
       </div>
@@ -53,7 +55,7 @@ export default function WatchPage() {
         href="/"
         className="mb-6 inline-flex items-center gap-2 text-sm text-muted hover:text-bone"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to library
+        <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" /> {t("watch.back")}
       </Link>
 
       <div className="flicker-in overflow-hidden rounded-2xl border border-line bg-black shadow-[0_40px_120px_rgba(0,0,0,0.6)]">
@@ -90,15 +92,15 @@ export default function WatchPage() {
         </div>
         <dl className="shrink-0 space-y-2 rounded-xl border border-line bg-panel p-4 font-mono text-xs text-muted">
           <div className="flex justify-between gap-8">
-            <dt>Duration</dt>
+            <dt>{t("watch.duration")}</dt>
             <dd className="text-bone">{formatDuration(v.durationSeconds)}</dd>
           </div>
           <div className="flex justify-between gap-8">
-            <dt>Size</dt>
+            <dt>{t("watch.size")}</dt>
             <dd className="text-bone">{formatBytes(v.sizeBytes)}</dd>
           </div>
           <div className="flex justify-between gap-8">
-            <dt>Added</dt>
+            <dt>{t("watch.added")}</dt>
             <dd className="text-bone">{formatDate(v.createdAt)}</dd>
           </div>
         </dl>

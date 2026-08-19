@@ -655,6 +655,128 @@ export const UploadVideoFileResponse = zod.object({
 
 
 /**
+ * V1 supports direct video file URLs (mp4/webm/mkv/mov) only. Platform providers (YouTube, X, Facebook, Instagram, LinkedIn, TikTok) are recognised but disabled/stubbed — no DRM, paywall, authentication or access-control bypass is performed. The imported file lands in PENDING_REVIEW like an upload.
+ * @summary Import the video binary from a direct file URL (OWNER/ADMIN)
+ */
+export const ImportVideoParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ImportVideoBody = zod.object({
+  "url": zod.string().url()
+})
+
+export const ImportVideoResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Tells the client whether direct browser-to-object-storage uploads are available (production R2) or whether it must use the server-mediated upload endpoint (development local storage).
+ * @summary Upload capabilities for the active storage provider (OWNER/ADMIN)
+ */
+export const GetUploadCapabilitiesParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetUploadCapabilitiesResponse = zod.object({
+  "directUploadSupported": zod.boolean(),
+  "maxBytes": zod.number().int(),
+  "multipartPartSize": zod.number().int(),
+  "singlePutLimit": zod.number().int()
+})
+
+
+/**
+ * Returns presigned URLs so the browser uploads the binary straight to object storage; the application server never proxies large files in production. Tracked as an upload job; abandoned jobs are aborted and cleaned up.
+ * @summary Begin a direct browser-to-storage upload (OWNER/ADMIN)
+ */
+export const CreateDirectUploadParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+
+export const CreateDirectUploadBody = zod.object({
+  "sizeBytes": zod.number().int().min(1),
+  "mimeType": zod.string(),
+  "fileName": zod.string()
+})
+
+export const CreateDirectUploadResponse = zod.object({
+  "uploadId": zod.number().int(),
+  "mode": zod.enum(['single', 'multipart']),
+  "url": zod.string().optional(),
+  "parts": zod.array(zod.object({
+  "partNumber": zod.number().int(),
+  "url": zod.string()
+}))
+})
+
+
+/**
+ * Completes a multipart upload with the part ETags and moves the video to PENDING_REVIEW.
+ * @summary Finalize a direct upload (OWNER/ADMIN)
+ */
+export const CompleteDirectUploadParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "uploadId": zod.coerce.number().int()
+})
+
+export const CompleteDirectUploadBody = zod.object({
+  "parts": zod.array(zod.object({
+  "partNumber": zod.number().int(),
+  "etag": zod.string()
+})).optional()
+})
+
+export const CompleteDirectUploadResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Aborts the multipart upload at the provider and marks the job ABORTED.
+ * @summary Abort a direct upload (OWNER/ADMIN)
+ */
+export const AbortDirectUploadParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "uploadId": zod.coerce.number().int()
+})
+
+export const AbortDirectUploadResponse = zod.void()
+
+
+/**
  * @summary Manually approve or reject a video (OWNER/ADMIN)
  */
 export const ReviewVideoParams = zod.object({

@@ -26,12 +26,19 @@ import {
 } from "../lib/video-library";
 import { logger } from "../lib/logger";
 import { requireAuth, requireRole } from "../middlewares/auth";
+import importRouter from "./import";
+import directUploadsRouter from "./direct-uploads";
 
 const router: IRouter = Router();
 
 // All /videos management endpoints are OWNER/ADMIN only. Members get the
 // filtered library endpoints in Phase 3.
 router.use(requireAuth, requireRole("OWNER", "ADMIN"));
+
+// Import + direct-upload routes share this auth boundary (mounted before the
+// generic /:id handlers so their static suffixes always win).
+router.use(importRouter);
+router.use(directUploadsRouter);
 
 router.get("/", async (req: Request, res: Response) => {
   const query = ListVideosQueryParams.parse(req.query);

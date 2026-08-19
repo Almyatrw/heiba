@@ -11,9 +11,11 @@ import {
 import { PageHeader } from "@/components/Layout";
 import { Button, EmptyState, Field, Input, Modal, Spinner, Textarea } from "@/components/ui";
 import { apiErrorMessage } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 
 export default function CategoriesPage() {
   const queryClient = useQueryClient();
+  const t = useT();
   const categories = useListCategories();
   const [editing, setEditing] = useState<Category | "new" | null>(null);
   const [name, setName] = useState("");
@@ -50,12 +52,12 @@ export default function CategoriesPage() {
       await invalidate();
       setEditing(null);
     } catch (err) {
-      setError(apiErrorMessage(err, "Save failed"));
+      setError(apiErrorMessage(err, t("common.saveFailed")));
     }
   };
 
   const removeCategory = async (id: number) => {
-    if (!confirm("Delete this category? Videos keep their other categories.")) return;
+    if (!confirm(t("categories.deleteConfirm"))) return;
     await remove.mutateAsync({ id });
     await invalidate();
   };
@@ -65,11 +67,11 @@ export default function CategoriesPage() {
   return (
     <div className="rise">
       <PageHeader
-        kicker="Manage"
-        title="Categories"
+        kicker={t("nav.manage")}
+        title={t("categories.title")}
         actions={
           <Button onClick={() => open("new")}>
-            <Plus className="h-4 w-4" /> New category
+            <Plus className="h-4 w-4" /> {t("categories.new")}
           </Button>
         }
       />
@@ -77,11 +79,11 @@ export default function CategoriesPage() {
         <Spinner />
       ) : items.length === 0 ? (
         <EmptyState
-          title="No categories yet"
-          body="Categories organise the library shelf for members."
+          title={t("categories.emptyTitle")}
+          body={t("categories.emptyBody")}
           action={
             <Button onClick={() => open("new")}>
-              <Plus className="h-4 w-4" /> Create the first one
+              <Plus className="h-4 w-4" /> {t("categories.createFirst")}
             </Button>
           }
         />
@@ -121,14 +123,14 @@ export default function CategoriesPage() {
 
       {editing ? (
         <Modal
-          title={editing === "new" ? "New category" : `Edit ${editing.name}`}
+          title={editing === "new" ? t("categories.new") : t("categories.edit", { name: editing.name })}
           onClose={() => setEditing(null)}
         >
           <div className="space-y-4">
-            <Field label="Name">
+            <Field label={t("groups.fieldName")}>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
-            <Field label="Description (optional)">
+            <Field label={`${t("groups.fieldDescription")} (${t("common.optional")})`}>
               <Textarea
                 rows={2}
                 value={description}
@@ -138,13 +140,13 @@ export default function CategoriesPage() {
             {error ? <p className="text-sm text-danger">{error}</p> : null}
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setEditing(null)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 disabled={!name.trim() || create.isPending || update.isPending}
                 onClick={() => void save()}
               >
-                Save
+                {t("common.save")}
               </Button>
             </div>
           </div>

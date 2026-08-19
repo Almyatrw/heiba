@@ -1707,6 +1707,320 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /videos/{id}/import:
+    post:
+      operationId: importVideo
+      tags: [videos]
+      summary: Import the video binary from a direct file URL (OWNER/ADMIN)
+      description: >-
+        V1 supports direct video file URLs (mp4/webm/mkv/mov) only. Platform
+        providers (YouTube, X, Facebook, Instagram, LinkedIn, TikTok) are
+        recognised but disabled/stubbed — no DRM, paywall, authentication or
+        access-control bypass is performed. The imported file lands in
+        PENDING_REVIEW like an upload.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+      responses:
+        "200":
+          description: Import stored; video is now PENDING_REVIEW
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "400":
+          description: Invalid/unsupported URL or unreachable remote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}/upload-capabilities:
+    get:
+      operationId: getUploadCapabilities
+      tags: [videos]
+      summary: Upload capabilities for the active storage provider (OWNER/ADMIN)
+      description: >-
+        Tells the client whether direct browser-to-object-storage uploads are
+        available (production R2) or whether it must use the server-mediated
+        upload endpoint (development local storage).
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Upload capabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [directUploadSupported, maxBytes, multipartPartSize, singlePutLimit]
+                properties:
+                  directUploadSupported:
+                    type: boolean
+                  maxBytes:
+                    type: integer
+                  multipartPartSize:
+                    type: integer
+                  singlePutLimit:
+                    type: integer
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}/direct-upload:
+    post:
+      operationId: createDirectUpload
+      tags: [videos]
+      summary: Begin a direct browser-to-storage upload (OWNER/ADMIN)
+      description: >-
+        Returns presigned URLs so the browser uploads the binary straight to
+        object storage; the application server never proxies large files in
+        production. Tracked as an upload job; abandoned jobs are aborted and
+        cleaned up.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sizeBytes, mimeType, fileName]
+              properties:
+                sizeBytes:
+                  type: integer
+                  minimum: 1
+                mimeType:
+                  type: string
+                fileName:
+                  type: string
+      responses:
+        "200":
+          description: Presigned upload prepared
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [uploadId, mode, parts]
+                properties:
+                  uploadId:
+                    type: integer
+                  mode:
+                    type: string
+                    enum: [single, multipart]
+                  url:
+                    type: string
+                  parts:
+                    type: array
+                    items:
+                      type: object
+                      required: [partNumber, url]
+                      properties:
+                        partNumber:
+                          type: integer
+                        url:
+                          type: string
+        "400":
+          description: Unsupported provider or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Declared size exceeds the upload limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}/direct-upload/{uploadId}/complete:
+    post:
+      operationId: completeDirectUpload
+      tags: [videos]
+      summary: Finalize a direct upload (OWNER/ADMIN)
+      description: Completes a multipart upload with the part ETags and moves the video to PENDING_REVIEW.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parts:
+                  type: array
+                  items:
+                    type: object
+                    required: [partNumber, etag]
+                    properties:
+                      partNumber:
+                        type: integer
+                      etag:
+                        type: string
+      responses:
+        "200":
+          description: Upload completed; video is now PENDING_REVIEW
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "400":
+          description: Job not found, already finished, or expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}/direct-upload/{uploadId}/abort:
+    post:
+      operationId: abortDirectUpload
+      tags: [videos]
+      summary: Abort a direct upload (OWNER/ADMIN)
+      description: Aborts the multipart upload at the provider and marks the job ABORTED.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Aborted
+        "400":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /videos/{id}/review:
     post:
       operationId: reviewVideo

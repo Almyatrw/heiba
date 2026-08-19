@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Pencil, Trash2, Upload, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Eye, Link2, FileUp } from "lucide-react";
 import {
   useCreateVideo,
   useDeleteVideo,
@@ -9,7 +9,6 @@ import {
   useListGroups,
   useListVideos,
   useUpdateVideo,
-  useUploadVideoFile,
   type CreateVideoInput,
   type Video,
   type VideoStatus,
@@ -28,6 +27,14 @@ import {
 } from "@/components/ui";
 import { apiErrorMessage } from "@/lib/auth";
 import { formatBytes, formatDate } from "@/lib/format";
+import { useT } from "@/lib/i18n";
+import {
+  directUpload,
+  getUploadCapabilities,
+  importFromUrl,
+  proxyUpload,
+  type UploadProgress,
+} from "@/lib/upload";
 
 const STATUS_OPTIONS: (VideoStatus | "")[] = [
   "",
@@ -50,11 +57,12 @@ function AssignmentChecks({
   selected: number[];
   onToggle: (id: number) => void;
 }) {
+  const t = useT();
   return (
     <Field label={label}>
       <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-line bg-panel-2 p-2">
         {items.length === 0 ? (
-          <p className="px-1 py-1 text-xs text-muted">None yet</p>
+          <p className="px-1 py-1 text-xs text-muted">{t("common.noneYet")}</p>
         ) : (
           items.map((item) => (
             <label
@@ -76,8 +84,191 @@ function AssignmentChecks({
   );
 }
 
+function UploadModal({
+  video,
+  onClose,
+  onDone,
+}: {
+  video: Video;
+  onClose: () => void;
+  onDone: () => Promise<void>;
+}) {
+  const t = useT();
+  const [mode, setMode] = useState<"file" | "url">("file");
+  const [url, setUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
+  const [busy, setBusy] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const pct =
+    progress && progress.total > 0
+      ? Math.min(100, Math.round((progress.loaded / progress.total) * 100))
+      : null;
+
+  const doUpload = async () => {
+    const file = fileInput.current?.files?.[0];
+    if (!file) return;
+    setError(null);
+    setBusy(true);
+    setProgress({ loaded: 0, total: file.size });
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      const capabilities = await getUploadCapabilities(video.id);
+      if (capabilities.directUploadSupported) {
+        await directUpload(video.id, file, capabilities, setProgress, controller.signal);
+      } else {
+        await proxyUpload(video.id, file, setProgress, controller.signal);
+      }
+      await onDone();
+      onClose();
+    } catch (err) {
+      setError(apiErrorMessage(err, t("upload.failed")));
+    } finally {
+      setBusy(false);
+      abortRef.current = null;
+    }
+  };
+
+  const doImport = async () => {
+    if (!url.trim()) return;
+    setError(null);
+    setBusy(true);
+    try {
+      await importFromUrl(video.id, url.trim());
+      await onDone();
+      onClose();
+    } catch (err) {
+      setError(apiErrorMessage(err, t("upload.importFailed")));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const abort = () => abortRef.current?.abort();
+
+  const action = video.storageProvider ? t("upload.replace") : t("upload.upload");
+
+  return (
+    <Modal
+      title={t("upload.modalTitle", { action, title: video.title })}
+      onClose={() => {
+        abort();
+        onClose();
+      }}
+    >
+      <div className="space-y-4">
+        <div className="flex gap-1 rounded-lg border border-line bg-panel-2 p-1">
+          {(
+            [
+              ["file", t("upload.tabFile"), FileUp],
+              ["url", t("upload.tabUrl"), Link2],
+            ] as const
+          ).map(([key, label, Icon]) => (
+            <button
+              key={key}
+              onClick={() => {
+                setMode(key);
+                setError(null);
+              }}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                mode === key
+                  ? "bg-ember-soft text-ember"
+                  : "text-muted hover:text-bone"
+              }`}
+            >
+              <Icon className="h-4 w-4" strokeWidth={1.75} />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {mode === "file" ? (
+          <>
+            <p className="text-sm text-muted">
+              {t("upload.hint", {
+                suffix: video.storageProvider
+                  ? t("upload.hintReplace")
+                  : t("upload.hintNew"),
+              })}
+            </p>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,video/x-matroska"
+              className="block w-full text-sm text-muted file:me-4 file:rounded-lg file:border-0 file:bg-panel-2 file:px-4 file:py-2 file:text-sm file:text-bone hover:file:bg-panel-2/80"
+            />
+            {progress && busy ? (
+              <div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-panel-2">
+                  <div
+                    className="h-full rounded-full bg-ember transition-[width]"
+                    style={{ width: `${pct ?? 0}%` }}
+                  />
+                </div>
+                <div className="mt-1.5 flex items-center justify-between font-mono text-[11px] text-muted">
+                  <span>
+                    {t("upload.uploading")}{" "}
+                    {pct !== null
+                      ? `${pct}% — ${formatBytes(progress.loaded)} / ${formatBytes(progress.total)}`
+                      : formatBytes(progress.loaded)}
+                  </span>
+                  <button
+                    onClick={abort}
+                    className="text-danger hover:underline"
+                  >
+                    {t("upload.abort")}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Field label={t("upload.importUrlLabel")} hint={t("upload.importHint")}>
+              <Input
+                type="url"
+                dir="ltr"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder={t("upload.importUrlPlaceholder")}
+              />
+            </Field>
+          </>
+        )}
+
+        {error ? <p className="text-sm text-danger">{error}</p> : null}
+
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              abort();
+              onClose();
+            }}
+          >
+            {t("common.cancel")}
+          </Button>
+          {mode === "file" ? (
+            <Button disabled={busy} onClick={() => void doUpload()}>
+              {busy ? t("upload.uploading") : action}
+            </Button>
+          ) : (
+            <Button disabled={busy || !url.trim()} onClick={() => void doImport()}>
+              {busy ? t("upload.importing") : t("upload.import")}
+            </Button>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export default function VideosPage() {
   const queryClient = useQueryClient();
+  const t = useT();
   const [statusFilter, setStatusFilter] = useState<VideoStatus | "">("");
   const videos = useListVideos({
     limit: 100,
@@ -96,13 +287,10 @@ export default function VideosPage() {
     groupIds: [] as number[],
   });
   const [error, setError] = useState<string | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const create = useCreateVideo();
   const update = useUpdateVideo();
   const remove = useDeleteVideo();
-  const upload = useUploadVideoFile();
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
@@ -134,7 +322,7 @@ export default function VideosPage() {
     setError(null);
     const tags = form.tags
       .split(",")
-      .map((t) => t.trim())
+      .map((tag) => tag.trim())
       .filter(Boolean);
     try {
       if (editing === "new") {
@@ -161,24 +349,12 @@ export default function VideosPage() {
       await invalidate();
       setEditing(null);
     } catch (err) {
-      setError(apiErrorMessage(err, "Save failed"));
-    }
-  };
-
-  const doUpload = async (file: File) => {
-    if (!uploadingFor) return;
-    setUploadError(null);
-    try {
-      await upload.mutateAsync({ id: uploadingFor.id, data: { file } });
-      await invalidate();
-      setUploadingFor(null);
-    } catch (err) {
-      setUploadError(apiErrorMessage(err, "Upload failed"));
+      setError(apiErrorMessage(err, t("common.saveFailed")));
     }
   };
 
   const removeVideo = async (v: Video) => {
-    if (!confirm(`Delete "${v.title}"? The stored file is removed permanently.`)) return;
+    if (!confirm(t("videos.deleteConfirm", { title: v.title }))) return;
     await remove.mutateAsync({ id: v.id });
     await invalidate();
   };
@@ -188,11 +364,11 @@ export default function VideosPage() {
   return (
     <div className="rise">
       <PageHeader
-        kicker="Manage"
-        title="Videos"
+        kicker={t("nav.manage")}
+        title={t("videos.title")}
         actions={
           <Button onClick={() => open("new")}>
-            <Plus className="h-4 w-4" /> New video
+            <Plus className="h-4 w-4" /> {t("videos.new")}
           </Button>
         }
       />
@@ -204,7 +380,7 @@ export default function VideosPage() {
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s || "all"} value={s}>
-              {s ? s.replace(/_/g, " ") : "All statuses"}
+              {s ? t(`status.${s}`) : t("videos.allStatuses")}
             </option>
           ))}
         </Select>
@@ -214,25 +390,25 @@ export default function VideosPage() {
         <Spinner />
       ) : items.length === 0 ? (
         <EmptyState
-          title="No videos yet"
-          body="Create a video entry, upload its file, then approve it from the review queue."
+          title={t("videos.emptyTitle")}
+          body={t("videos.emptyBody")}
           action={
             <Button onClick={() => open("new")}>
-              <Plus className="h-4 w-4" /> Create the first video
+              <Plus className="h-4 w-4" /> {t("videos.createFirst")}
             </Button>
           }
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-line">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line font-mono text-[10px] tracking-widest text-muted uppercase">
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">File</th>
-                <th className="px-4 py-3">Access</th>
-                <th className="px-4 py-3">Created</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t("videos.colTitle")}</th>
+                <th className="px-4 py-3">{t("videos.colStatus")}</th>
+                <th className="px-4 py-3">{t("videos.colFile")}</th>
+                <th className="px-4 py-3">{t("videos.colAccess")}</th>
+                <th className="px-4 py-3">{t("videos.colCreated")}</th>
+                <th className="px-4 py-3 text-end">{t("videos.colActions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -252,12 +428,14 @@ export default function VideosPage() {
                   <td className="px-4 py-3 font-mono text-xs text-muted">
                     {v.originalFileName
                       ? `${v.originalFileName} (${formatBytes(v.sizeBytes)})`
-                      : "no file"}
+                      : t("videos.noFile")}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-muted">
                     {v.groupIds.length === 0
-                      ? "private"
-                      : `${v.groupIds.length} ${v.groupIds.length === 1 ? "group" : "groups"}`}
+                      ? t("videos.private")
+                      : t(v.groupIds.length === 1 ? "videos.group" : "videos.groups", {
+                          count: v.groupIds.length,
+                        })}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-muted">
                     {formatDate(v.createdAt)}
@@ -266,7 +444,7 @@ export default function VideosPage() {
                     <div className="flex justify-end gap-1">
                       {v.storageProvider ? (
                         <Link href={`/watch/${v.id}`}>
-                          <Button variant="quiet" className="px-2" title="Watch">
+                          <Button variant="quiet" className="px-2" title={t("videos.watch")}>
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
@@ -274,11 +452,12 @@ export default function VideosPage() {
                       <Button
                         variant="quiet"
                         className="px-2"
-                        title={v.storageProvider ? "Replace file" : "Upload file"}
-                        onClick={() => {
-                          setUploadError(null);
-                          setUploadingFor(v);
-                        }}
+                        title={
+                          v.storageProvider
+                            ? t("videos.replaceFile")
+                            : t("videos.uploadFile")
+                        }
+                        onClick={() => setUploadingFor(v)}
                       >
                         <Upload className="h-4 w-4" />
                       </Button>
@@ -303,19 +482,23 @@ export default function VideosPage() {
 
       {editing ? (
         <Modal
-          title={editing === "new" ? "New video" : `Edit ${editing.title}`}
+          title={
+            editing === "new"
+              ? t("videos.new")
+              : t("videos.edit", { title: editing.title })
+          }
           onClose={() => setEditing(null)}
           wide
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-4">
-              <Field label="Title">
+              <Field label={t("videos.fieldTitle")}>
                 <Input
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 />
               </Field>
-              <Field label="Description (optional)">
+              <Field label={`${t("videos.fieldDescription")} (${t("common.optional")})`}>
                 <Textarea
                   rows={4}
                   value={form.description}
@@ -324,23 +507,23 @@ export default function VideosPage() {
                   }
                 />
               </Field>
-              <Field label="Tags" hint="Comma-separated">
+              <Field label={t("videos.fieldTags")} hint={t("videos.tagsHint")}>
                 <Input
                   value={form.tags}
                   onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                  placeholder="onboarding, training"
+                  placeholder={t("videos.tagsPlaceholder")}
                 />
               </Field>
             </div>
             <div className="space-y-4">
               <AssignmentChecks
-                label="Categories"
+                label={t("videos.fieldCategories")}
                 items={categories.data?.categories ?? []}
                 selected={form.categoryIds}
                 onToggle={(id) => toggle("categoryIds", id)}
               />
               <AssignmentChecks
-                label="Access groups"
+                label={t("videos.fieldGroups")}
                 items={groups.data?.groups ?? []}
                 selected={form.groupIds}
                 onToggle={(id) => toggle("groupIds", id)}
@@ -350,57 +533,24 @@ export default function VideosPage() {
           {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setEditing(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               disabled={!form.title.trim() || create.isPending || update.isPending}
               onClick={() => void save()}
             >
-              Save
+              {t("common.save")}
             </Button>
           </div>
         </Modal>
       ) : null}
 
       {uploadingFor ? (
-        <Modal
-          title={`${uploadingFor.storageProvider ? "Replace" : "Upload"} file — ${uploadingFor.title}`}
+        <UploadModal
+          video={uploadingFor}
           onClose={() => setUploadingFor(null)}
-        >
-          <div className="space-y-4">
-            <p className="text-sm text-muted">
-              mp4, webm, mov, mkv, avi or m4v.{" "}
-              {uploadingFor.storageProvider
-                ? "Replacing the file sends the video back through manual review."
-                : "After upload, the video waits in the review queue."}
-            </p>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="video/*,.mkv,.avi,.mov,.m4v"
-              className="block w-full text-sm text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-panel-2 file:px-4 file:py-2 file:text-sm file:text-bone hover:file:bg-panel-2/80"
-            />
-            {upload.isPending ? (
-              <Spinner label="Uploading…" />
-            ) : uploadError ? (
-              <p className="text-sm text-danger">{uploadError}</p>
-            ) : null}
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setUploadingFor(null)}>
-                Cancel
-              </Button>
-              <Button
-                disabled={upload.isPending}
-                onClick={() => {
-                  const file = fileInput.current?.files?.[0];
-                  if (file) void doUpload(file);
-                }}
-              >
-                Upload
-              </Button>
-            </div>
-          </div>
-        </Modal>
+          onDone={invalidate}
+        />
       ) : null}
     </div>
   );

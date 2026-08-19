@@ -19,6 +19,7 @@ import {
 } from "@/components/ui";
 import { apiErrorMessage } from "@/lib/auth";
 import { formatBytes, formatDate, streamUrl } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 
 function ReviewPanel({
   video,
@@ -30,12 +31,13 @@ function ReviewPanel({
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"APPROVED" | "REJECTED" | null>(null);
+  const t = useT();
   const review = useReviewVideo();
   const history = useListVideoReviews(video.id);
 
   const decide = async (action: "APPROVED" | "REJECTED") => {
     if (action === "REJECTED" && !notes.trim()) {
-      setError("A note is required when rejecting.");
+      setError(t("reviews.noteRequired"));
       return;
     }
     setError(null);
@@ -47,7 +49,7 @@ function ReviewPanel({
       });
       onDone();
     } catch (err) {
-      setError(apiErrorMessage(err, "Review failed"));
+      setError(apiErrorMessage(err, t("reviews.failed")));
     } finally {
       setBusy(null);
     }
@@ -69,8 +71,8 @@ function ReviewPanel({
           </div>
           <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs text-muted">
             <span>{formatBytes(video.sizeBytes)}</span>
-            <span>{video.mimeType ?? "unknown type"}</span>
-            <span>uploaded {formatDate(video.updatedAt)}</span>
+            <span>{video.mimeType ?? t("reviews.unknownType")}</span>
+            <span>{t("reviews.uploaded", { date: formatDate(video.updatedAt) })}</span>
           </dl>
           {video.description ? (
             <p className="mt-3 text-sm text-muted">{video.description}</p>
@@ -80,7 +82,7 @@ function ReviewPanel({
           {history.data && history.data.reviews.length > 0 ? (
             <div>
               <div className="mb-2 font-mono text-[10px] tracking-widest text-muted uppercase">
-                Previous decisions
+                {t("reviews.previousDecisions")}
               </div>
               <ul className="space-y-2">
                 {history.data.reviews.map((r) => (
@@ -102,12 +104,12 @@ function ReviewPanel({
               </ul>
             </div>
           ) : null}
-          <Field label="Notes (required to reject)">
+          <Field label={t("reviews.notesLabel")}>
             <Textarea
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Why is this being approved or rejected?"
+              placeholder={t("reviews.notesPlaceholder")}
             />
           </Field>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
@@ -118,7 +120,7 @@ function ReviewPanel({
               onClick={() => void decide("APPROVED")}
             >
               <CheckCircle2 className="h-4 w-4" />
-              {busy === "APPROVED" ? "Approving…" : "Approve"}
+              {busy === "APPROVED" ? t("reviews.approving") : t("reviews.approve")}
             </Button>
             <Button
               variant="danger"
@@ -127,7 +129,7 @@ function ReviewPanel({
               onClick={() => void decide("REJECTED")}
             >
               <XCircle className="h-4 w-4" />
-              {busy === "REJECTED" ? "Rejecting…" : "Reject"}
+              {busy === "REJECTED" ? t("reviews.rejecting") : t("reviews.reject")}
             </Button>
           </div>
         </div>
@@ -138,6 +140,7 @@ function ReviewPanel({
 
 export default function ReviewsPage() {
   const queryClient = useQueryClient();
+  const t = useT();
   const pending = useListPendingReviews({ limit: 100 });
   const [openId, setOpenId] = useState<number | null>(null);
 
@@ -152,13 +155,13 @@ export default function ReviewsPage() {
 
   return (
     <div className="rise">
-      <PageHeader kicker="Manual review" title="Review queue" />
+      <PageHeader kicker={t("reviews.kicker")} title={t("reviews.title")} />
       {pending.isLoading ? (
         <Spinner />
       ) : items.length === 0 ? (
         <EmptyState
-          title="The queue is clear"
-          body="Uploaded videos appear here for approval before members can see them."
+          title={t("reviews.emptyTitle")}
+          body={t("reviews.emptyBody")}
         />
       ) : (
         <div className="space-y-3">
@@ -170,7 +173,7 @@ export default function ReviewsPage() {
                 className="overflow-hidden rounded-2xl border border-line bg-panel"
               >
                 <button
-                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-start"
                   onClick={() => setOpenId(open ? null : v.id)}
                 >
                   <div className="flex min-w-0 items-center gap-4">
@@ -180,14 +183,13 @@ export default function ReviewsPage() {
                         {v.title}
                       </div>
                       <div className="font-mono text-[11px] text-muted">
-                        {v.originalFileName ?? "no file"} · uploaded{" "}
-                        {formatDate(v.updatedAt)}
+                        {v.originalFileName ?? t("videos.noFile")} · {t("reviews.uploaded", { date: formatDate(v.updatedAt) })}
                       </div>
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     {v.groupIds.length === 0 ? (
-                      <Badge tone="danger">No groups — stays private</Badge>
+                      <Badge tone="danger">{t("reviews.noGroups")}</Badge>
                     ) : null}
                     {open ? (
                       <ChevronUp className="h-4 w-4 text-muted" />

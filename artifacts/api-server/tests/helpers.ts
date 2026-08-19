@@ -24,7 +24,7 @@ export const api = () => request(app);
 
 export async function resetDatabase(): Promise<void> {
   await db.execute(
-    sql`TRUNCATE users, groups, user_groups, videos, sessions, categories, video_categories, video_groups, video_reviews RESTART IDENTITY CASCADE`,
+    sql`TRUNCATE users, groups, user_groups, videos, video_uploads, sessions, categories, video_categories, video_groups, video_reviews RESTART IDENTITY CASCADE`,
   );
 }
 

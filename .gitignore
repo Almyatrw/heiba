@@ -48,6 +48,8 @@ Thumbs.db
 .cache/
 .local/
 
-# Local video storage (dev/test)
-storage/
+# Local video storage data dirs (dev/test); must NOT swallow src/**/storage
+/storage/
+artifacts/api-server/storage/
 .test-storage/
+!**/src/lib/storage/

@@ -25,16 +25,21 @@ import type {
   Category,
   CategoryInput,
   CategoryListResult,
+  CompleteDirectUploadBody,
+  CreateDirectUpload200,
+  CreateDirectUploadBody,
   CreateGroupInput,
   CreateUserInput,
   CreateVideoInput,
   CurrentUserResult,
   Error,
+  GetUploadCapabilities200,
   Group,
   GroupListResult,
   GroupMember,
   GroupMemberListResult,
   HealthStatus,
+  ImportVideoBody,
   ListGroupsParams,
   ListLibraryVideosParams,
   ListPendingReviewsParams,
@@ -2381,6 +2386,379 @@ export const useUploadVideoFile = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getUploadVideoFileMutationOptions(options));
+    }
+
+export const getImportVideoUrl = (id: number,) => {
+
+
+
+
+  return `/api/videos/${id}/import`
+}
+
+/**
+ * V1 supports direct video file URLs (mp4/webm/mkv/mov) only. Platform providers (YouTube, X, Facebook, Instagram, LinkedIn, TikTok) are recognised but disabled/stubbed — no DRM, paywall, authentication or access-control bypass is performed. The imported file lands in PENDING_REVIEW like an upload.
+ * @summary Import the video binary from a direct file URL (OWNER/ADMIN)
+ */
+export const importVideo = async (id: number,
+    importVideoBody: ImportVideoBody, options?: Parameters<typeof customFetch>[1]): Promise<Video> => {
+
+  return customFetch<Video>(getImportVideoUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(importVideoBody)
+  }
+);}
+
+
+
+
+
+export const getImportVideoMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importVideo>>, TError,{id: number;data: ImportVideoBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importVideo>>, TError,{id: number;data: ImportVideoBody}, TContext> => {
+
+const mutationKey = ['importVideo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importVideo>>, {id: number;data: ImportVideoBody}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  importVideo(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportVideoMutationResult = NonNullable<Awaited<ReturnType<typeof importVideo>>>
+    export type ImportVideoMutationBody = ImportVideoBody
+    export type ImportVideoMutationError = ErrorType<Error>
+
+    /**
+ * @summary Import the video binary from a direct file URL (OWNER/ADMIN)
+ */
+export const useImportVideo = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importVideo>>, TError,{id: number;data: ImportVideoBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importVideo>>,
+        TError,
+        {id: number;data: ImportVideoBody},
+        TContext
+      > => {
+      return useMutation(getImportVideoMutationOptions(options));
+    }
+
+export const getGetUploadCapabilitiesUrl = (id: number,) => {
+
+
+
+
+  return `/api/videos/${id}/upload-capabilities`
+}
+
+/**
+ * Tells the client whether direct browser-to-object-storage uploads are available (production R2) or whether it must use the server-mediated upload endpoint (development local storage).
+ * @summary Upload capabilities for the active storage provider (OWNER/ADMIN)
+ */
+export const getUploadCapabilities = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<GetUploadCapabilities200> => {
+
+  return customFetch<GetUploadCapabilities200>(getGetUploadCapabilitiesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUploadCapabilitiesQueryKey = (id: number,) => {
+    return [
+    `/api/videos/${id}/upload-capabilities`
+    ] as const;
+    }
+
+
+export const getGetUploadCapabilitiesQueryOptions = <TData = Awaited<ReturnType<typeof getUploadCapabilities>>, TError = ErrorType<Error>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUploadCapabilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUploadCapabilitiesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUploadCapabilities>>> = ({ signal }) => getUploadCapabilities(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUploadCapabilities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUploadCapabilitiesQueryResult = NonNullable<Awaited<ReturnType<typeof getUploadCapabilities>>>
+export type GetUploadCapabilitiesQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Upload capabilities for the active storage provider (OWNER/ADMIN)
+ */
+
+export function useGetUploadCapabilities<TData = Awaited<ReturnType<typeof getUploadCapabilities>>, TError = ErrorType<Error>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUploadCapabilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUploadCapabilitiesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateDirectUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/videos/${id}/direct-upload`
+}
+
+/**
+ * Returns presigned URLs so the browser uploads the binary straight to object storage; the application server never proxies large files in production. Tracked as an upload job; abandoned jobs are aborted and cleaned up.
+ * @summary Begin a direct browser-to-storage upload (OWNER/ADMIN)
+ */
+export const createDirectUpload = async (id: number,
+    createDirectUploadBody: CreateDirectUploadBody, options?: Parameters<typeof customFetch>[1]): Promise<CreateDirectUpload200> => {
+
+  return customFetch<CreateDirectUpload200>(getCreateDirectUploadUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createDirectUploadBody)
+  }
+);}
+
+
+
+
+
+export const getCreateDirectUploadMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDirectUpload>>, TError,{id: number;data: CreateDirectUploadBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDirectUpload>>, TError,{id: number;data: CreateDirectUploadBody}, TContext> => {
+
+const mutationKey = ['createDirectUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDirectUpload>>, {id: number;data: CreateDirectUploadBody}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createDirectUpload(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDirectUploadMutationResult = NonNullable<Awaited<ReturnType<typeof createDirectUpload>>>
+    export type CreateDirectUploadMutationBody = CreateDirectUploadBody
+    export type CreateDirectUploadMutationError = ErrorType<Error>
+
+    /**
+ * @summary Begin a direct browser-to-storage upload (OWNER/ADMIN)
+ */
+export const useCreateDirectUpload = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDirectUpload>>, TError,{id: number;data: CreateDirectUploadBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDirectUpload>>,
+        TError,
+        {id: number;data: CreateDirectUploadBody},
+        TContext
+      > => {
+      return useMutation(getCreateDirectUploadMutationOptions(options));
+    }
+
+export const getCompleteDirectUploadUrl = (id: number,
+    uploadId: number,) => {
+
+
+
+
+  return `/api/videos/${id}/direct-upload/${uploadId}/complete`
+}
+
+/**
+ * Completes a multipart upload with the part ETags and moves the video to PENDING_REVIEW.
+ * @summary Finalize a direct upload (OWNER/ADMIN)
+ */
+export const completeDirectUpload = async (id: number,
+    uploadId: number,
+    completeDirectUploadBody?: CompleteDirectUploadBody, options?: Parameters<typeof customFetch>[1]): Promise<Video> => {
+
+  return customFetch<Video>(getCompleteDirectUploadUrl(id,uploadId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(completeDirectUploadBody)
+  }
+);}
+
+
+
+
+
+export const getCompleteDirectUploadMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeDirectUpload>>, TError,{id: number;uploadId: number;data?: CompleteDirectUploadBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeDirectUpload>>, TError,{id: number;uploadId: number;data?: CompleteDirectUploadBody}, TContext> => {
+
+const mutationKey = ['completeDirectUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeDirectUpload>>, {id: number;uploadId: number;data?: CompleteDirectUploadBody}> = (props) => {
+          const {id,uploadId,data} = props ?? {};
+
+          return  completeDirectUpload(id,uploadId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteDirectUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeDirectUpload>>>
+    export type CompleteDirectUploadMutationBody = CompleteDirectUploadBody | undefined
+    export type CompleteDirectUploadMutationError = ErrorType<Error>
+
+    /**
+ * @summary Finalize a direct upload (OWNER/ADMIN)
+ */
+export const useCompleteDirectUpload = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeDirectUpload>>, TError,{id: number;uploadId: number;data?: CompleteDirectUploadBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeDirectUpload>>,
+        TError,
+        {id: number;uploadId: number;data?: CompleteDirectUploadBody},
+        TContext
+      > => {
+      return useMutation(getCompleteDirectUploadMutationOptions(options));
+    }
+
+export const getAbortDirectUploadUrl = (id: number,
+    uploadId: number,) => {
+
+
+
+
+  return `/api/videos/${id}/direct-upload/${uploadId}/abort`
+}
+
+/**
+ * Aborts the multipart upload at the provider and marks the job ABORTED.
+ * @summary Abort a direct upload (OWNER/ADMIN)
+ */
+export const abortDirectUpload = async (id: number,
+    uploadId: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getAbortDirectUploadUrl(id,uploadId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAbortDirectUploadMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof abortDirectUpload>>, TError,{id: number;uploadId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof abortDirectUpload>>, TError,{id: number;uploadId: number}, TContext> => {
+
+const mutationKey = ['abortDirectUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof abortDirectUpload>>, {id: number;uploadId: number}> = (props) => {
+          const {id,uploadId} = props ?? {};
+
+          return  abortDirectUpload(id,uploadId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AbortDirectUploadMutationResult = NonNullable<Awaited<ReturnType<typeof abortDirectUpload>>>
+
+    export type AbortDirectUploadMutationError = ErrorType<Error>
+
+    /**
+ * @summary Abort a direct upload (OWNER/ADMIN)
+ */
+export const useAbortDirectUpload = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof abortDirectUpload>>, TError,{id: number;uploadId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof abortDirectUpload>>,
+        TError,
+        {id: number;uploadId: number},
+        TContext
+      > => {
+      return useMutation(getAbortDirectUploadMutationOptions(options));
     }
 
 export const getReviewVideoUrl = (id: number,) => {

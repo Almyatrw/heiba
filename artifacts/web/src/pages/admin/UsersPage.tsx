@@ -22,12 +22,14 @@ import {
 } from "@/components/ui";
 import { apiErrorMessage, useAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 
 const ROLES: UserRole[] = ["MEMBER", "GROUP_MANAGER", "ADMIN"];
 
 export default function UsersPage() {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
+  const t = useT();
   const users = useListUsers({ limit: 100 });
   const [editing, setEditing] = useState<User | "new" | null>(null);
   const [email, setEmail] = useState("");
@@ -63,13 +65,13 @@ export default function UsersPage() {
       await invalidate();
       setEditing(null);
     } catch (err) {
-      setError(apiErrorMessage(err, "Save failed"));
+      setError(apiErrorMessage(err, t("common.saveFailed")));
     }
   };
 
   const toggleActive = async (u: User) => {
     if (u.isActive) {
-      if (!confirm(`Deactivate ${u.email}? Their sessions are revoked immediately.`)) return;
+      if (!confirm(t("users.deactivateConfirm", { email: u.email }))) return;
       await deactivate.mutateAsync({ id: u.id });
     } else {
       await update.mutateAsync({ id: u.id, data: { isActive: true } });
@@ -83,28 +85,28 @@ export default function UsersPage() {
   return (
     <div className="rise">
       <PageHeader
-        kicker="Manage"
-        title="Members"
+        kicker={t("nav.manage")}
+        title={t("users.title")}
         actions={
           <Button onClick={() => open("new")}>
-            <Plus className="h-4 w-4" /> Invite member
+            <Plus className="h-4 w-4" /> {t("users.invite")}
           </Button>
         }
       />
       {users.isLoading ? (
         <Spinner />
       ) : items.length === 0 ? (
-        <EmptyState title="No members" />
+        <EmptyState title={t("users.emptyTitle")} />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-line">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line font-mono text-[10px] tracking-widest text-muted uppercase">
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Joined</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t("users.colEmail")}</th>
+                <th className="px-4 py-3">{t("users.colRole")}</th>
+                <th className="px-4 py-3">{t("users.colStatus")}</th>
+                <th className="px-4 py-3">{t("users.colJoined")}</th>
+                <th className="px-4 py-3 text-end">{t("users.colActions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -113,12 +115,12 @@ export default function UsersPage() {
                   <td className="px-4 py-3 text-bone">{u.email}</td>
                   <td className="px-4 py-3">
                     <Badge tone={u.role === "OWNER" ? "ember" : "neutral"}>
-                      {u.role}
+                      {t(`role.${u.role}`)}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
                     <Badge tone={u.isActive ? "moss" : "danger"}>
-                      {u.isActive ? "Active" : "Deactivated"}
+                      {u.isActive ? t("users.active") : t("users.deactivated")}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-muted">
@@ -138,7 +140,7 @@ export default function UsersPage() {
                         <Button
                           variant="quiet"
                           className={u.isActive ? "px-2 hover:text-danger" : "px-2 hover:text-moss"}
-                          title={u.isActive ? "Deactivate" : "Reactivate"}
+                          title={u.isActive ? t("users.deactivate") : t("users.reactivate")}
                           onClick={() => void toggleActive(u)}
                         >
                           {u.isActive ? (
@@ -159,13 +161,13 @@ export default function UsersPage() {
 
       {editing ? (
         <Modal
-          title={editing === "new" ? "Invite member" : `Edit ${editing.email}`}
+          title={editing === "new" ? t("users.invite") : t("users.edit", { email: editing.email })}
           onClose={() => setEditing(null)}
         >
           <div className="space-y-4">
             {editing === "new" ? (
               <>
-                <Field label="Email">
+                <Field label={t("login.email")}>
                   <Input
                     type="email"
                     value={email}
@@ -173,8 +175,8 @@ export default function UsersPage() {
                   />
                 </Field>
                 <Field
-                  label="Password"
-                  hint="Share this with the member privately; they can be asked to rotate it later."
+                  label={t("login.password")}
+                  hint={t("users.passwordHint")}
                 >
                   <Input
                     type="password"
@@ -184,7 +186,7 @@ export default function UsersPage() {
                 </Field>
               </>
             ) : null}
-            <Field label="Role">
+            <Field label={t("users.colRole")}>
               <Select
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
@@ -194,7 +196,7 @@ export default function UsersPage() {
               >
                 {ROLES.map((r) => (
                   <option key={r} value={r}>
-                    {r}
+                    {t(`role.${r}`)}
                   </option>
                 ))}
               </Select>
@@ -202,7 +204,7 @@ export default function UsersPage() {
             {error ? <p className="text-sm text-danger">{error}</p> : null}
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setEditing(null)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 disabled={
@@ -213,7 +215,7 @@ export default function UsersPage() {
                 }
                 onClick={() => void save()}
               >
-                Save
+                {t("common.save")}
               </Button>
             </div>
           </div>

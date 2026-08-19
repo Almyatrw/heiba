@@ -26,12 +26,12 @@ export function VideoCard({ video, index = 0 }: { video: Video; index?: number }
             {video.title.slice(0, 1).toUpperCase()}
           </span>
         </div>
-        <div className="absolute right-2 bottom-2 rounded-md bg-ink/70 px-1.5 py-0.5 font-mono text-[10px] text-bone/90 backdrop-blur">
+        <div className="absolute end-2 bottom-2 rounded-md bg-ink/70 px-1.5 py-0.5 font-mono text-[10px] text-bone/90 backdrop-blur">
           {formatDuration(video.durationSeconds)}
         </div>
         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ember text-ink shadow-[0_0_40px_rgba(242,163,60,0.5)]">
-            <Play className="ml-0.5 h-5 w-5" fill="currentColor" />
+            <Play className="ms-0.5 h-5 w-5" fill="currentColor" />
           </span>
         </div>
       </div>
