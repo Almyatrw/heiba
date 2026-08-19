@@ -22,6 +22,10 @@ tags:
     description: Video library management
   - name: reviews
     description: Manual video review operations
+  - name: library
+    description: Member-facing video library
+  - name: stream
+    description: Secure video streaming
 components:
   securitySchemes:
     bearerAuth:
@@ -1836,6 +1840,152 @@ paths:
                 $ref: "#/components/schemas/Error"
         "403":
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /library/videos:
+    get:
+      operationId: listLibraryVideos
+      tags: [library]
+      summary: Browse the approved video library
+      description: Returns APPROVED videos only. Members and group managers see videos shared with at least one of their groups; videos without group assignments are private to OWNER/ADMIN.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive search over title and description
+          schema:
+            type: string
+            maxLength: 200
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+        - name: groupId
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 24
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Library videos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /library/videos/{id}:
+    get:
+      operationId: getLibraryVideo
+      tags: [library]
+      summary: Get a library video's metadata
+      description: 404 for videos that are not approved or not visible to the current user (existence is not leaked).
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Video metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found or not visible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /stream/{id}:
+    get:
+      operationId: streamVideo
+      tags: [stream]
+      summary: Stream a video (HTTP Range supported)
+      description: Streams the binary for approved videos visible to the current user. Supports byte-range requests (206) for seeking. The internal storage location is never exposed.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Range
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Byte range, e.g. "bytes=0-1048575"
+      responses:
+        "200":
+          description: Full video stream
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            video/webm:
+              schema:
+                type: string
+                format: binary
+        "206":
+          description: Partial video stream
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            video/webm:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found, not approved, or not visible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "416":
+          description: Range not satisfiable
           content:
             application/json:
               schema:

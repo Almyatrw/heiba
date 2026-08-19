@@ -23,6 +23,7 @@ export * from './groupMemberListResult';
 export * from './groupRole';
 export * from './healthStatus';
 export * from './listGroupsParams';
+export * from './listLibraryVideosParams';
 export * from './listPendingReviewsParams';
 export * from './listUsersParams';
 export * from './listVideosParams';

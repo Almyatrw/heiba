@@ -339,3 +339,22 @@ limit?: number;
 offset?: number;
 };
 
+export type ListLibraryVideosParams = {
+/**
+ * Case-insensitive search over title and description
+ * @maxLength 200
+ */
+q?: string;
+categoryId?: number;
+groupId?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+

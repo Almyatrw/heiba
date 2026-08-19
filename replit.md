@@ -27,7 +27,8 @@ Private, scalable video streaming platform: an owner-managed library where video
 - `lib/api-zod` — generated Zod schemas (`src/generated/`), consumed by the server for response validation
 - `lib/api-client-react` — generated React Query hooks + `src/custom-fetch.ts` mutator (generic `customFetch<T>`, exports `ErrorType`)
 - `lib/db` — Drizzle schema (`src/schema/`: users, groups, user_groups, videos, sessions) + `drizzle.config.ts`
-- `artifacts/mockup-sandbox` — Vite/React sandbox for UI mockups
+- `artifacts/web` — production frontend (Vite + React + wouter + React Query + Tailwind v4); dev server proxies /api to the API server
+- `artifacts/mockup-sandbox` — Vite/React sandbox for UI mockups (not the product frontend)
 - Full product spec: `attached_assets/Pasted-Build-a-Scalable-Private-Video-Streaming-Platform-1-Pro_1787005027314.txt`
 
 ## Architecture decisions

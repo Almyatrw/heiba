@@ -6,6 +6,8 @@ import groupsRouter from "./groups";
 import { adminCategoriesRouter, categoriesRouter } from "./categories";
 import videosRouter from "./videos";
 import { reviewsRouter, videoReviewsRouter } from "./reviews";
+import libraryRouter from "./library";
+import streamRouter from "./stream";
 
 const router: IRouter = Router();
 
@@ -18,5 +20,7 @@ router.use("/groups", groupsRouter);
 router.use("/videos", videosRouter);
 router.use("/videos", videoReviewsRouter);
 router.use("/reviews", reviewsRouter);
+router.use("/library", libraryRouter);
+router.use("/stream", streamRouter);
 
 export default router;

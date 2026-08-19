@@ -36,6 +36,7 @@ import type {
   GroupMemberListResult,
   HealthStatus,
   ListGroupsParams,
+  ListLibraryVideosParams,
   ListPendingReviewsParams,
   ListUsersParams,
   ListVideosParams,
@@ -2603,6 +2604,247 @@ export function useListPendingReviews<TData = Awaited<ReturnType<typeof listPend
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListPendingReviewsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListLibraryVideosUrl = (params?: ListLibraryVideosParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/library/videos?${stringifiedParams}` : `/api/library/videos`
+}
+
+/**
+ * Returns APPROVED videos only. Members and group managers see videos shared with at least one of their groups; videos without group assignments are private to OWNER/ADMIN.
+ * @summary Browse the approved video library
+ */
+export const listLibraryVideos = async (params?: ListLibraryVideosParams, options?: Parameters<typeof customFetch>[1]): Promise<VideoListResult> => {
+
+  return customFetch<VideoListResult>(getListLibraryVideosUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLibraryVideosQueryKey = (params?: ListLibraryVideosParams,) => {
+    return [
+    `/api/library/videos`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListLibraryVideosQueryOptions = <TData = Awaited<ReturnType<typeof listLibraryVideos>>, TError = ErrorType<Error>>(params?: ListLibraryVideosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryVideos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLibraryVideosQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLibraryVideos>>> = ({ signal }) => listLibraryVideos(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLibraryVideos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLibraryVideosQueryResult = NonNullable<Awaited<ReturnType<typeof listLibraryVideos>>>
+export type ListLibraryVideosQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Browse the approved video library
+ */
+
+export function useListLibraryVideos<TData = Awaited<ReturnType<typeof listLibraryVideos>>, TError = ErrorType<Error>>(
+ params?: ListLibraryVideosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryVideos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLibraryVideosQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetLibraryVideoUrl = (id: number,) => {
+
+
+
+
+  return `/api/library/videos/${id}`
+}
+
+/**
+ * 404 for videos that are not approved or not visible to the current user (existence is not leaked).
+ * @summary Get a library video's metadata
+ */
+export const getLibraryVideo = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Video> => {
+
+  return customFetch<Video>(getGetLibraryVideoUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLibraryVideoQueryKey = (id: number,) => {
+    return [
+    `/api/library/videos/${id}`
+    ] as const;
+    }
+
+
+export const getGetLibraryVideoQueryOptions = <TData = Awaited<ReturnType<typeof getLibraryVideo>>, TError = ErrorType<Error>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryVideo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLibraryVideoQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLibraryVideo>>> = ({ signal }) => getLibraryVideo(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLibraryVideo>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLibraryVideoQueryResult = NonNullable<Awaited<ReturnType<typeof getLibraryVideo>>>
+export type GetLibraryVideoQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Get a library video's metadata
+ */
+
+export function useGetLibraryVideo<TData = Awaited<ReturnType<typeof getLibraryVideo>>, TError = ErrorType<Error>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryVideo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLibraryVideoQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStreamVideoUrl = (id: number,) => {
+
+
+
+
+  return `/api/stream/${id}`
+}
+
+/**
+ * Streams the binary for approved videos visible to the current user. Supports byte-range requests (206) for seeking. The internal storage location is never exposed.
+ * @summary Stream a video (HTTP Range supported)
+ */
+export const streamVideo = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getStreamVideoUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStreamVideoQueryKey = (id: number,) => {
+    return [
+    `/api/stream/${id}`
+    ] as const;
+    }
+
+
+export const getStreamVideoQueryOptions = <TData = Awaited<ReturnType<typeof streamVideo>>, TError = ErrorType<Error>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof streamVideo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStreamVideoQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof streamVideo>>> = ({ signal }) => streamVideo(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof streamVideo>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type StreamVideoQueryResult = NonNullable<Awaited<ReturnType<typeof streamVideo>>>
+export type StreamVideoQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Stream a video (HTTP Range supported)
+ */
+
+export function useStreamVideo<TData = Awaited<ReturnType<typeof streamVideo>>, TError = ErrorType<Error>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof streamVideo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getStreamVideoQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

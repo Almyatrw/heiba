@@ -746,3 +746,89 @@ export const ListPendingReviewsResponse = zod.object({
 })
 
 
+/**
+ * Returns APPROVED videos only. Members and group managers see videos shared with at least one of their groups; videos without group assignments are private to OWNER/ADMIN.
+ * @summary Browse the approved video library
+ */
+export const listLibraryVideosQueryQMax = 200;
+
+export const listLibraryVideosQueryLimitDefault = 24;
+export const listLibraryVideosQueryLimitMax = 100;
+
+export const listLibraryVideosQueryOffsetDefault = 0;
+export const listLibraryVideosQueryOffsetMin = 0;
+
+
+
+export const ListLibraryVideosQueryParams = zod.object({
+  "q": zod.coerce.string().max(listLibraryVideosQueryQMax).optional().describe('Case-insensitive search over title and description'),
+  "categoryId": zod.coerce.number().int().optional(),
+  "groupId": zod.coerce.number().int().optional(),
+  "limit": zod.coerce.number().int().min(1).max(listLibraryVideosQueryLimitMax).default(listLibraryVideosQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listLibraryVideosQueryOffsetMin).default(listLibraryVideosQueryOffsetDefault)
+})
+
+export const ListLibraryVideosResponse = zod.object({
+  "videos": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number().int()
+})
+
+
+/**
+ * 404 for videos that are not approved or not visible to the current user (existence is not leaked).
+ * @summary Get a library video's metadata
+ */
+export const GetLibraryVideoParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetLibraryVideoResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Streams the binary for approved videos visible to the current user. Supports byte-range requests (206) for seeking. The internal storage location is never exposed.
+ * @summary Stream a video (HTTP Range supported)
+ */
+export const StreamVideoParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const StreamVideoHeader = zod.object({
+  "Range": zod.string().optional().describe('Byte range, e.g. \"bytes=0-1048575\"')
+})
+
+export const StreamVideoResponse = zod.unknown()
+
+

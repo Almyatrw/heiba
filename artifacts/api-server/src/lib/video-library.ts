@@ -3,13 +3,60 @@ import {
   categoriesTable,
   db,
   groupsTable,
+  userGroupsTable,
   videoCategoriesTable,
   videoGroupsTable,
   videosTable,
+  type User,
   type Video,
 } from "@workspace/db";
 import { badRequest, notFound } from "./errors";
 import { toAdminVideo } from "./serializers";
+
+export function isAdmin(user: User) {
+  return user.role === "OWNER" || user.role === "ADMIN";
+}
+
+// Group ids a non-admin user belongs to (as member or manager).
+export async function memberGroupIds(userId: number): Promise<number[]> {
+  const rows = await db
+    .select({ groupId: userGroupsTable.group_id })
+    .from(userGroupsTable)
+    .where(eq(userGroupsTable.user_id, userId));
+  return rows.map((r) => r.groupId);
+}
+
+// Library visibility: approved videos only; for non-admins the video must be
+// shared with at least one of their groups. Videos with no group assignments
+// are private to OWNER/ADMIN.
+export async function canSeeInLibrary(
+  user: User,
+  video: Video,
+): Promise<boolean> {
+  if (video.status !== "APPROVED") return false;
+  if (isAdmin(user)) return true;
+  const groupIds = await memberGroupIds(user.id);
+  if (groupIds.length === 0) return false;
+  const shared = await db
+    .select({ videoId: videoGroupsTable.video_id })
+    .from(videoGroupsTable)
+    .where(
+      and(
+        eq(videoGroupsTable.video_id, video.id),
+        inArray(videoGroupsTable.group_id, groupIds),
+      ),
+    )
+    .limit(1);
+  return shared.length > 0;
+}
+
+// Streaming access: members stream what they can see in the library;
+// OWNER/ADMIN may stream any video that has a file (needed to review).
+export async function canStream(user: User, video: Video): Promise<boolean> {
+  if (!video.storage_key) return false;
+  if (isAdmin(user)) return true;
+  return canSeeInLibrary(user, video);
+}
 
 export async function getVideoOr404(id: number): Promise<Video> {
   const [video] = await db

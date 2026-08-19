@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #08090c;
+  --color-panel: #0f1115;
+  --color-panel-2: #15181f;
+  --color-line: #23262f;
+  --color-ember: #f2a33c;
+  --color-ember-soft: #f2a33c26;
+  --color-bone: #ece9e2;
+  --color-muted: #8b8f9c;
+  --color-danger: #e5534b;
+  --color-moss: #5fba7d;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Film-grain atmosphere: a fixed, cheap SVG noise layer over everything */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+}
+
+/* Projector-glow backdrop behind the app shell */
+.app-glow {
+  background:
+    radial-gradient(1100px 500px at 80% -10%, rgba(242, 163, 60, 0.07), transparent 60%),
+    radial-gradient(900px 420px at 10% -20%, rgba(229, 83, 75, 0.05), transparent 55%);
+}
+
+::selection {
+  background: rgba(242, 163, 60, 0.35);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #262a34;
+  border-radius: 999px;
+  border: 2px solid #08090c;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes flicker-in {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.6;
+  }
+  55% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.flicker-in {
+  animation: flicker-in 0.45s linear both;
+}
+
+.poster-sheen {
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.09) 45%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.7s ease;
+}
+.group:hover .poster-sheen {
+  transform: translateX(100%);
+}
