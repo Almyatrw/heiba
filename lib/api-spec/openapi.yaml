@@ -3,13 +3,164 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Heiba private video streaming platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication and session operations
+  - name: admin
+    description: Administrative operations
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Session token in the Authorization header
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: heiba_session
+      description: Session token in an httpOnly cookie
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    UserRole:
+      type: string
+      enum: [OWNER, ADMIN, GROUP_MANAGER, MEMBER]
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - role
+        - isActive
+        - createdAt
+    SessionInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        deviceId:
+          type: string
+          nullable: true
+        deviceInfo:
+          type: string
+          nullable: true
+        ipAddress:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        revoked:
+          type: boolean
+        current:
+          type: boolean
+      required:
+        - id
+        - ipAddress
+        - createdAt
+        - revoked
+        - current
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        deviceId:
+          type: string
+          maxLength: 128
+      required:
+        - email
+        - password
+    AuthResult:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - user
+        - token
+    CurrentUserResult:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        session:
+          $ref: "#/components/schemas/SessionInfo"
+      required:
+        - user
+        - session
+    SessionListResult:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionInfo"
+      required:
+        - sessions
+    UserListResult:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        total:
+          type: integer
+      required:
+        - users
+        - total
 paths:
   /healthz:
     get:
@@ -24,13 +175,218 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-components:
-  schemas:
-    HealthStatus:
-      type: object
-      properties:
-        status:
-          type: string
-      required:
-        - status
-
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Account deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out of the current session
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "204":
+          description: Logged out
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/logout-all:
+    post:
+      operationId: logoutAll
+      tags: [auth]
+      summary: Log out of all sessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "204":
+          description: All sessions revoked
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current user and session
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Current user and session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/sessions:
+    get:
+      operationId: listMySessions
+      tags: [auth]
+      summary: List active sessions of the current user
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Active sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/sessions/{id}:
+    delete:
+      operationId: revokeMySession
+      tags: [auth]
+      summary: Revoke one of the current user's sessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Session revoked
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Session not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      summary: List users (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/UserRole"
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /admin/sessions/{id}:
+    delete:
+      operationId: adminTerminateSession
+      tags: [admin]
+      summary: Terminate any session (OWNER only)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Session terminated
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"

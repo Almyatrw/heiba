@@ -5,7 +5,10 @@
  * Heiba private video streaming platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { User } from './user';
 
-export interface HealthStatus {
-  status: string;
+export interface AuthResult {
+  user: User;
+  token: string;
+  expiresAt?: Date | null;
 }

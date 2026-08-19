@@ -57,6 +57,9 @@ export default defineConfig({
       prettier: true,
       override: {
         zod: {
+          // The workspace pins zod v3 ("zod": "^3.25.76"); without this, orval
+          // defaults to v4 syntax (e.g. zod.int()) which does not exist in v3.
+          version: 3,
           coerce: {
             query: ['boolean', 'number', 'string'],
             param: ['boolean', 'number', 'string'],

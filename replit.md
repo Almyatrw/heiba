@@ -39,7 +39,7 @@ Private, scalable video streaming platform: an owner-managed library where video
 
 ## Product
 
-Phase 0 (current): workspace scaffold, health endpoint validated by generated Zod schema, core DB schema verified against live Postgres. No user-facing features yet.
+Phase 1 (current): full auth/session/RBAC. Argon2id passwords, HMAC-hashed opaque session tokens, login/logout/logout-all/me, own session management, admin user listing (OWNER+ADMIN), owner-only session termination. Integration tests run against real PostgreSQL.
 
 ## User preferences
 

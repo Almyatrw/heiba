@@ -5,7 +5,8 @@
  * Heiba private video streaming platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { SessionInfo } from './sessionInfo';
 
-export interface HealthStatus {
-  status: string;
+export interface SessionListResult {
+  sessions: SessionInfo[];
 }
