@@ -7,6 +7,7 @@ export const groupsTable = pgTable(
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
     name: text("name").notNull(),
+    description: text("description"),
     owner_id: bigint("owner_id", { mode: "number" }).notNull().references(() => usersTable.id, { onDelete: "restrict" }),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

@@ -17,6 +17,8 @@ export default defineConfig({
       // Login rate limit stays enabled in production (default 20/15min); tests
       // raise it so repeated logins across cases do not interfere.
       LOGIN_RATE_LIMIT: "100000",
+      // Uploaded test files go to a scratch dir cleaned by global-setup
+      VIDEO_STORAGE_DIR: ".test-storage",
     },
   },
 });

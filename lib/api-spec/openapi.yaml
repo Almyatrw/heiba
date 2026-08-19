@@ -14,6 +14,14 @@ tags:
     description: Authentication and session operations
   - name: admin
     description: Administrative operations
+  - name: groups
+    description: Group and membership operations
+  - name: categories
+    description: Video category operations
+  - name: videos
+    description: Video library management
+  - name: reviews
+    description: Manual video review operations
 components:
   securitySchemes:
     bearerAuth:
@@ -161,6 +169,358 @@ components:
       required:
         - users
         - total
+    CreateUserInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        role:
+          $ref: "#/components/schemas/UserRole"
+        isActive:
+          type: boolean
+      required:
+        - email
+        - password
+        - role
+    UpdateUserInput:
+      type: object
+      properties:
+        role:
+          $ref: "#/components/schemas/UserRole"
+        isActive:
+          type: boolean
+    GroupRole:
+      type: string
+      enum: [manager, member]
+    Group:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        ownerId:
+          type: integer
+        memberCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - ownerId
+        - memberCount
+        - createdAt
+        - updatedAt
+    GroupListResult:
+      type: object
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/Group"
+        total:
+          type: integer
+      required:
+        - groups
+        - total
+    CreateGroupInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+      required:
+        - name
+    UpdateGroupInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+    GroupMember:
+      type: object
+      properties:
+        userId:
+          type: integer
+        email:
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+        roleInGroup:
+          $ref: "#/components/schemas/GroupRole"
+        joinedAt:
+          type: string
+          format: date-time
+      required:
+        - userId
+        - email
+        - role
+        - roleInGroup
+        - joinedAt
+    GroupMemberListResult:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMember"
+      required:
+        - members
+    AddGroupMemberInput:
+      type: object
+      properties:
+        userId:
+          type: integer
+        roleInGroup:
+          $ref: "#/components/schemas/GroupRole"
+      required:
+        - userId
+    UpdateGroupMemberInput:
+      type: object
+      properties:
+        roleInGroup:
+          $ref: "#/components/schemas/GroupRole"
+      required:
+        - roleInGroup
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - createdAt
+    CategoryListResult:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+      required:
+        - categories
+    CategoryInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 1000
+      required:
+        - name
+    UpdateCategoryInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+    VideoStatus:
+      type: string
+      enum: [PROCESSING, PENDING_REVIEW, APPROVED, REJECTED, PRIVATE, ARCHIVED, FAILED]
+    Video:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/VideoStatus"
+        durationSeconds:
+          type: number
+          nullable: true
+        mimeType:
+          type: string
+          nullable: true
+        sizeBytes:
+          type: integer
+          nullable: true
+        originalFileName:
+          type: string
+          nullable: true
+        storageProvider:
+          type: string
+          nullable: true
+        uploadedBy:
+          type: integer
+        categoryIds:
+          type: array
+          items:
+            type: integer
+        groupIds:
+          type: array
+          items:
+            type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - tags
+        - status
+        - uploadedBy
+        - categoryIds
+        - groupIds
+        - createdAt
+        - updatedAt
+    VideoListResult:
+      type: object
+      properties:
+        videos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Video"
+        total:
+          type: integer
+      required:
+        - videos
+        - total
+    CreateVideoInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        description:
+          type: string
+          maxLength: 5000
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
+        categoryIds:
+          type: array
+          items:
+            type: integer
+        groupIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - title
+    UpdateVideoInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        description:
+          type: string
+          maxLength: 5000
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
+        categoryIds:
+          type: array
+          items:
+            type: integer
+        groupIds:
+          type: array
+          items:
+            type: integer
+    ReviewAction:
+      type: string
+      enum: [APPROVED, REJECTED]
+    ReviewInput:
+      type: object
+      properties:
+        action:
+          $ref: "#/components/schemas/ReviewAction"
+        notes:
+          type: string
+          maxLength: 2000
+      required:
+        - action
+    ReviewRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        videoId:
+          type: integer
+        reviewerId:
+          type: integer
+        action:
+          $ref: "#/components/schemas/ReviewAction"
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - videoId
+        - reviewerId
+        - action
+        - createdAt
+    ReviewListResult:
+      type: object
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewRecord"
+      required:
+        - reviews
 paths:
   /healthz:
     get:
@@ -355,6 +715,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    post:
+      operationId: createUser
+      tags: [admin]
+      summary: Create a user (OWNER/ADMIN; role constraints apply)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInput"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden (cannot assign this role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /admin/sessions/{id}:
     delete:
       operationId: adminTerminateSession
@@ -386,6 +790,1052 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /admin/users/{id}:
+    patch:
+      operationId: updateUser
+      tags: [admin]
+      summary: Update a user's role or active flag (OWNER/ADMIN; role constraints apply)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInput"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deactivateUser
+      tags: [admin]
+      summary: Deactivate a user (OWNER/ADMIN; role constraints apply)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: User deactivated
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /groups:
+    get:
+      operationId: listGroups
+      tags: [groups]
+      summary: List groups visible to the current user
+      description: OWNER/ADMIN see all groups; GROUP_MANAGER sees groups they manage; MEMBER sees groups they belong to.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Groups list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createGroup
+      tags: [groups]
+      summary: Create a group (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupInput"
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Group name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /groups/{id}:
+    get:
+      operationId: getGroup
+      tags: [groups]
+      summary: Get a group (members, managers, OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Group not found or not visible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateGroup
+      tags: [groups]
+      summary: Update a group (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGroupInput"
+      responses:
+        "200":
+          description: Group updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Group name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteGroup
+      tags: [groups]
+      summary: Delete a group (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Group deleted
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /groups/{id}/members:
+    get:
+      operationId: listGroupMembers
+      tags: [groups]
+      summary: List group members (members, managers, OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Group members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupMemberListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Group not found or not visible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: addGroupMember
+      tags: [groups]
+      summary: Add a member to a group (OWNER/ADMIN, or manager of the group)
+      description: Managers can only add members with the "member" group role; assigning "manager" requires OWNER/ADMIN.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddGroupMemberInput"
+      responses:
+        "201":
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupMember"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Group or user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: User is already a member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /groups/{id}/members/{userId}:
+    patch:
+      operationId: updateGroupMember
+      tags: [groups]
+      summary: Change a member's role within the group (OWNER/ADMIN for "manager"; managers can only toggle members)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGroupMemberInput"
+      responses:
+        "200":
+          description: Member updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupMember"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Membership not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: removeGroupMember
+      tags: [groups]
+      summary: Remove a member from a group (OWNER/ADMIN, or manager of the group)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Member removed
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Membership not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories (any authenticated user)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /admin/categories:
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a category (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Category name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /admin/categories/{id}:
+    patch:
+      operationId: updateCategory
+      tags: [categories]
+      summary: Update a category (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryInput"
+      responses:
+        "200":
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Category name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      summary: Delete a category (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Category deleted
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos:
+    get:
+      operationId: listVideos
+      tags: [videos]
+      summary: List videos for management (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/VideoStatus"
+        - name: groupId
+          in: query
+          schema:
+            type: integer
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Videos list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createVideo
+      tags: [videos]
+      summary: Create a video entry (OWNER/ADMIN)
+      description: Creates metadata; upload the binary via POST /videos/{id}/file. New videos enter PROCESSING until the upload completes, then PENDING_REVIEW.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVideoInput"
+      responses:
+        "201":
+          description: Video created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}:
+    get:
+      operationId: getVideo
+      tags: [videos]
+      summary: Get a video for management (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateVideo
+      tags: [videos]
+      summary: Update video metadata and assignments (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVideoInput"
+      responses:
+        "200":
+          description: Video updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteVideo
+      tags: [videos]
+      summary: Delete a video and its stored binary (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Video deleted
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}/file:
+    post:
+      operationId: uploadVideoFile
+      tags: [videos]
+      summary: Upload the video binary (OWNER/ADMIN)
+      description: Accepts a single multipart "file" field (mp4/webm/mkv/mov). The video moves to PENDING_REVIEW once stored.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        "200":
+          description: Upload stored; video is now PENDING_REVIEW
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "400":
+          description: Missing file or unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}/review:
+    post:
+      operationId: reviewVideo
+      tags: [reviews]
+      summary: Manually approve or reject a video (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "200":
+          description: Review recorded; video status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Video has no uploaded file yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}/reviews:
+    get:
+      operationId: listVideoReviews
+      tags: [reviews]
+      summary: List review history for a video (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Review records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /reviews/pending:
+    get:
+      operationId: listPendingReviews
+      tags: [reviews]
+      summary: List videos waiting for manual review (OWNER/ADMIN)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Pending videos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoListResult"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
           content:
             application/json:
               schema:

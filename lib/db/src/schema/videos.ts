@@ -8,11 +8,16 @@ export const videosTable = pgTable(
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
     owner_id: bigint("owner_id", { mode: "number" }).notNull().references(() => usersTable.id, { onDelete: "restrict" }),
-    title: text("title"),
+    title: text("title").notNull(),
     description: text("description"),
-    storage_key: text("storage_key").notNull(),
-    storage_provider: text("storage_provider").notNull(),
+    tags: text("tags").array().notNull().default([]),
+    // Binary lives outside PostgreSQL behind the storage abstraction; these
+    // columns are filled once the upload completes.
+    storage_key: text("storage_key"),
+    storage_provider: text("storage_provider"),
     storage_meta: jsonb("storage_meta"),
+    mime_type: text("mime_type"),
+    original_file_name: text("original_file_name"),
     status: video_status("status").notNull().default("PROCESSING"),
     size_bytes: bigint("size_bytes", { mode: "number" }),
     duration_seconds: numeric("duration_seconds"),

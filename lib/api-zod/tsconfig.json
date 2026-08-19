@@ -5,7 +5,9 @@
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    // Generated multipart zod schemas reference the File/Blob globals
+    "lib": ["es2022", "dom"]
   },
   "include": ["src"]
 }

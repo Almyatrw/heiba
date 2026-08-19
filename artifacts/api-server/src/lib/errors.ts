@@ -19,6 +19,12 @@ export const forbidden = (message = "Insufficient permissions") =>
   new HttpError(403, "FORBIDDEN", message);
 export const notFound = (message = "Resource not found") =>
   new HttpError(404, "NOT_FOUND", message);
+export const badRequest = (message = "Invalid request") =>
+  new HttpError(400, "BAD_REQUEST", message);
+export const conflict = (message = "Resource conflict") =>
+  new HttpError(409, "CONFLICT", message);
+export const payloadTooLarge = (message = "Payload too large") =>
+  new HttpError(413, "PAYLOAD_TOO_LARGE", message);
 
 export function notFoundHandler(_req: Request, res: Response) {
   res.status(404).json({ code: "NOT_FOUND", message: "Route not found" });

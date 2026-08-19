@@ -11,3 +11,5 @@ export const video_status = pgEnum("video_status", [
   "ARCHIVED",
   "FAILED",
 ]);
+export const review_action = pgEnum("review_action", ["APPROVED", "REJECTED"]);
+export const group_role = pgEnum("group_role", ["manager", "member"]);

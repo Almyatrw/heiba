@@ -5,3 +5,7 @@ export * from "./groups";
 export * from "./user_groups";
 export * from "./videos";
 export * from "./sessions";
+export * from "./categories";
+export * from "./video_categories";
+export * from "./video_groups";
+export * from "./video_reviews";

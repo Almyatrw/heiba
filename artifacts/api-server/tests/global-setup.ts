@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -39,4 +40,10 @@ export default async function setup(): Promise<void> {
       stdio: "inherit",
     },
   );
+
+  // Clean the test storage scratch directory
+  await rm(path.resolve(here, "../.test-storage"), {
+    recursive: true,
+    force: true,
+  });
 }

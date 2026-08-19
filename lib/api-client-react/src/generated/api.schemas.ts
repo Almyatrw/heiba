@@ -75,6 +75,214 @@ export interface UserListResult {
   total: number;
 }
 
+export interface CreateUserInput {
+  email: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password: string;
+  role: UserRole;
+  isActive?: boolean;
+}
+
+export interface UpdateUserInput {
+  role?: UserRole;
+  isActive?: boolean;
+}
+
+export type GroupRole = typeof GroupRole[keyof typeof GroupRole];
+
+
+export const GroupRole = {
+  manager: 'manager',
+  member: 'member',
+} as const;
+
+export interface Group {
+  id: number;
+  name: string;
+  description?: string | null;
+  ownerId: number;
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupListResult {
+  groups: Group[];
+  total: number;
+}
+
+export interface CreateGroupInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /** @maxLength 2000 */
+  description?: string;
+}
+
+export interface UpdateGroupInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name?: string;
+  /** @maxLength 2000 */
+  description?: string | null;
+}
+
+export interface GroupMember {
+  userId: number;
+  email: string;
+  role: UserRole;
+  roleInGroup: GroupRole;
+  joinedAt: string;
+}
+
+export interface GroupMemberListResult {
+  members: GroupMember[];
+}
+
+export interface AddGroupMemberInput {
+  userId: number;
+  roleInGroup?: GroupRole;
+}
+
+export interface UpdateGroupMemberInput {
+  roleInGroup: GroupRole;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  description?: string | null;
+  createdAt: string;
+}
+
+export interface CategoryListResult {
+  categories: Category[];
+}
+
+export interface CategoryInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /** @maxLength 1000 */
+  description?: string;
+}
+
+export interface UpdateCategoryInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name?: string;
+  /** @maxLength 1000 */
+  description?: string | null;
+}
+
+export type VideoStatus = typeof VideoStatus[keyof typeof VideoStatus];
+
+
+export const VideoStatus = {
+  PROCESSING: 'PROCESSING',
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  PRIVATE: 'PRIVATE',
+  ARCHIVED: 'ARCHIVED',
+  FAILED: 'FAILED',
+} as const;
+
+export interface Video {
+  id: number;
+  title: string;
+  description?: string | null;
+  tags: string[];
+  status: VideoStatus;
+  durationSeconds?: number | null;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  originalFileName?: string | null;
+  storageProvider?: string | null;
+  uploadedBy: number;
+  categoryIds: number[];
+  groupIds: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VideoListResult {
+  videos: Video[];
+  total: number;
+}
+
+export interface CreateVideoInput {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  title: string;
+  /** @maxLength 5000 */
+  description?: string;
+  /**
+     * @maxItems 20
+     * @items.maxLength 50
+     */
+  tags?: string[];
+  categoryIds?: number[];
+  groupIds?: number[];
+}
+
+export interface UpdateVideoInput {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  title?: string;
+  /** @maxLength 5000 */
+  description?: string | null;
+  /**
+     * @maxItems 20
+     * @items.maxLength 50
+     */
+  tags?: string[];
+  categoryIds?: number[];
+  groupIds?: number[];
+}
+
+export type ReviewAction = typeof ReviewAction[keyof typeof ReviewAction];
+
+
+export const ReviewAction = {
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface ReviewInput {
+  action: ReviewAction;
+  /** @maxLength 2000 */
+  notes?: string;
+}
+
+export interface ReviewRecord {
+  id: number;
+  videoId: number;
+  reviewerId: number;
+  action: ReviewAction;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface ReviewListResult {
+  reviews: ReviewRecord[];
+}
+
 export type ListUsersParams = {
 /**
  * @minimum 1
@@ -86,5 +294,48 @@ limit?: number;
  */
 offset?: number;
 role?: UserRole;
+};
+
+export type ListGroupsParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
+export type ListVideosParams = {
+status?: VideoStatus;
+groupId?: number;
+categoryId?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
+export type UploadVideoFileBody = {
+  file: Blob;
+};
+
+export type ListPendingReviewsParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
 };
 

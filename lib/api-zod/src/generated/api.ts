@@ -141,6 +141,30 @@ export const ListUsersResponse = zod.object({
 
 
 /**
+ * @summary Create a user (OWNER/ADMIN; role constraints apply)
+ */
+export const createUserBodyPasswordMin = 8;
+export const createUserBodyPasswordMax = 128;
+
+
+
+export const CreateUserBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(createUserBodyPasswordMin).max(createUserBodyPasswordMax),
+  "role": zod.enum(['OWNER', 'ADMIN', 'GROUP_MANAGER', 'MEMBER']),
+  "isActive": zod.boolean().optional()
+})
+
+export const CreateUserResponse = zod.object({
+  "id": zod.number().int(),
+  "email": zod.string(),
+  "role": zod.enum(['OWNER', 'ADMIN', 'GROUP_MANAGER', 'MEMBER']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Terminate any session (OWNER only)
  */
 export const AdminTerminateSessionParams = zod.object({
@@ -148,5 +172,577 @@ export const AdminTerminateSessionParams = zod.object({
 })
 
 export const AdminTerminateSessionResponse = zod.void()
+
+
+/**
+ * @summary Update a user's role or active flag (OWNER/ADMIN; role constraints apply)
+ */
+export const UpdateUserParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const UpdateUserBody = zod.object({
+  "role": zod.enum(['OWNER', 'ADMIN', 'GROUP_MANAGER', 'MEMBER']).optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateUserResponse = zod.object({
+  "id": zod.number().int(),
+  "email": zod.string(),
+  "role": zod.enum(['OWNER', 'ADMIN', 'GROUP_MANAGER', 'MEMBER']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Deactivate a user (OWNER/ADMIN; role constraints apply)
+ */
+export const DeactivateUserParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeactivateUserResponse = zod.void()
+
+
+/**
+ * OWNER/ADMIN see all groups; GROUP_MANAGER sees groups they manage; MEMBER sees groups they belong to.
+ * @summary List groups visible to the current user
+ */
+export const listGroupsQueryLimitDefault = 50;
+export const listGroupsQueryLimitMax = 100;
+
+export const listGroupsQueryOffsetDefault = 0;
+export const listGroupsQueryOffsetMin = 0;
+
+
+
+export const ListGroupsQueryParams = zod.object({
+  "limit": zod.coerce.number().int().min(1).max(listGroupsQueryLimitMax).default(listGroupsQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listGroupsQueryOffsetMin).default(listGroupsQueryOffsetDefault)
+})
+
+export const ListGroupsResponse = zod.object({
+  "groups": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "ownerId": zod.number().int(),
+  "memberCount": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number().int()
+})
+
+
+/**
+ * @summary Create a group (OWNER/ADMIN)
+ */
+export const createGroupBodyNameMax = 200;
+
+export const createGroupBodyDescriptionMax = 2000;
+
+
+
+export const CreateGroupBody = zod.object({
+  "name": zod.string().min(1).max(createGroupBodyNameMax),
+  "description": zod.string().max(createGroupBodyDescriptionMax).optional()
+})
+
+export const CreateGroupResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "ownerId": zod.number().int(),
+  "memberCount": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a group (members, managers, OWNER/ADMIN)
+ */
+export const GetGroupParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetGroupResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "ownerId": zod.number().int(),
+  "memberCount": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a group (OWNER/ADMIN)
+ */
+export const UpdateGroupParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateGroupBodyNameMax = 200;
+
+export const updateGroupBodyDescriptionMax = 2000;
+
+
+
+export const UpdateGroupBody = zod.object({
+  "name": zod.string().min(1).max(updateGroupBodyNameMax).optional(),
+  "description": zod.string().max(updateGroupBodyDescriptionMax).nullish()
+})
+
+export const UpdateGroupResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "ownerId": zod.number().int(),
+  "memberCount": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a group (OWNER/ADMIN)
+ */
+export const DeleteGroupParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteGroupResponse = zod.void()
+
+
+/**
+ * @summary List group members (members, managers, OWNER/ADMIN)
+ */
+export const ListGroupMembersParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ListGroupMembersResponse = zod.object({
+  "members": zod.array(zod.object({
+  "userId": zod.number().int(),
+  "email": zod.string(),
+  "role": zod.enum(['OWNER', 'ADMIN', 'GROUP_MANAGER', 'MEMBER']),
+  "roleInGroup": zod.enum(['manager', 'member']),
+  "joinedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Managers can only add members with the "member" group role; assigning "manager" requires OWNER/ADMIN.
+ * @summary Add a member to a group (OWNER/ADMIN, or manager of the group)
+ */
+export const AddGroupMemberParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AddGroupMemberBody = zod.object({
+  "userId": zod.number().int(),
+  "roleInGroup": zod.enum(['manager', 'member']).optional()
+})
+
+export const AddGroupMemberResponse = zod.object({
+  "userId": zod.number().int(),
+  "email": zod.string(),
+  "role": zod.enum(['OWNER', 'ADMIN', 'GROUP_MANAGER', 'MEMBER']),
+  "roleInGroup": zod.enum(['manager', 'member']),
+  "joinedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a member's role within the group (OWNER/ADMIN for "manager"; managers can only toggle members)
+ */
+export const UpdateGroupMemberParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "userId": zod.coerce.number().int()
+})
+
+export const UpdateGroupMemberBody = zod.object({
+  "roleInGroup": zod.enum(['manager', 'member'])
+})
+
+export const UpdateGroupMemberResponse = zod.object({
+  "userId": zod.number().int(),
+  "email": zod.string(),
+  "role": zod.enum(['OWNER', 'ADMIN', 'GROUP_MANAGER', 'MEMBER']),
+  "roleInGroup": zod.enum(['manager', 'member']),
+  "joinedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a member from a group (OWNER/ADMIN, or manager of the group)
+ */
+export const RemoveGroupMemberParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "userId": zod.coerce.number().int()
+})
+
+export const RemoveGroupMemberResponse = zod.void()
+
+
+/**
+ * @summary List all categories (any authenticated user)
+ */
+export const ListCategoriesResponse = zod.object({
+  "categories": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Create a category (OWNER/ADMIN)
+ */
+export const createCategoryBodyNameMax = 120;
+
+export const createCategoryBodyDescriptionMax = 1000;
+
+
+
+export const CreateCategoryBody = zod.object({
+  "name": zod.string().min(1).max(createCategoryBodyNameMax),
+  "description": zod.string().max(createCategoryBodyDescriptionMax).optional()
+})
+
+export const CreateCategoryResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a category (OWNER/ADMIN)
+ */
+export const UpdateCategoryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateCategoryBodyNameMax = 120;
+
+export const updateCategoryBodyDescriptionMax = 1000;
+
+
+
+export const UpdateCategoryBody = zod.object({
+  "name": zod.string().min(1).max(updateCategoryBodyNameMax).optional(),
+  "description": zod.string().max(updateCategoryBodyDescriptionMax).nullish()
+})
+
+export const UpdateCategoryResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a category (OWNER/ADMIN)
+ */
+export const DeleteCategoryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteCategoryResponse = zod.void()
+
+
+/**
+ * @summary List videos for management (OWNER/ADMIN)
+ */
+export const listVideosQueryLimitDefault = 50;
+export const listVideosQueryLimitMax = 100;
+
+export const listVideosQueryOffsetDefault = 0;
+export const listVideosQueryOffsetMin = 0;
+
+
+
+export const ListVideosQueryParams = zod.object({
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']).optional(),
+  "groupId": zod.coerce.number().int().optional(),
+  "categoryId": zod.coerce.number().int().optional(),
+  "limit": zod.coerce.number().int().min(1).max(listVideosQueryLimitMax).default(listVideosQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listVideosQueryOffsetMin).default(listVideosQueryOffsetDefault)
+})
+
+export const ListVideosResponse = zod.object({
+  "videos": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number().int()
+})
+
+
+/**
+ * Creates metadata; upload the binary via POST /videos/{id}/file. New videos enter PROCESSING until the upload completes, then PENDING_REVIEW.
+ * @summary Create a video entry (OWNER/ADMIN)
+ */
+export const createVideoBodyTitleMax = 300;
+
+export const createVideoBodyDescriptionMax = 5000;
+
+export const createVideoBodyTagsItemMax = 50;
+
+export const createVideoBodyTagsMax = 20;
+
+
+
+export const CreateVideoBody = zod.object({
+  "title": zod.string().min(1).max(createVideoBodyTitleMax),
+  "description": zod.string().max(createVideoBodyDescriptionMax).optional(),
+  "tags": zod.array(zod.string().max(createVideoBodyTagsItemMax)).max(createVideoBodyTagsMax).optional(),
+  "categoryIds": zod.array(zod.number().int()).optional(),
+  "groupIds": zod.array(zod.number().int()).optional()
+})
+
+export const CreateVideoResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a video for management (OWNER/ADMIN)
+ */
+export const GetVideoParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetVideoResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update video metadata and assignments (OWNER/ADMIN)
+ */
+export const UpdateVideoParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateVideoBodyTitleMax = 300;
+
+export const updateVideoBodyDescriptionMax = 5000;
+
+export const updateVideoBodyTagsItemMax = 50;
+
+export const updateVideoBodyTagsMax = 20;
+
+
+
+export const UpdateVideoBody = zod.object({
+  "title": zod.string().min(1).max(updateVideoBodyTitleMax).optional(),
+  "description": zod.string().max(updateVideoBodyDescriptionMax).nullish(),
+  "tags": zod.array(zod.string().max(updateVideoBodyTagsItemMax)).max(updateVideoBodyTagsMax).optional(),
+  "categoryIds": zod.array(zod.number().int()).optional(),
+  "groupIds": zod.array(zod.number().int()).optional()
+})
+
+export const UpdateVideoResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a video and its stored binary (OWNER/ADMIN)
+ */
+export const DeleteVideoParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteVideoResponse = zod.void()
+
+
+/**
+ * Accepts a single multipart "file" field (mp4/webm/mkv/mov). The video moves to PENDING_REVIEW once stored.
+ * @summary Upload the video binary (OWNER/ADMIN)
+ */
+export const UploadVideoFileParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const UploadVideoFileBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const UploadVideoFileResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Manually approve or reject a video (OWNER/ADMIN)
+ */
+export const ReviewVideoParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const reviewVideoBodyNotesMax = 2000;
+
+
+
+export const ReviewVideoBody = zod.object({
+  "action": zod.enum(['APPROVED', 'REJECTED']),
+  "notes": zod.string().max(reviewVideoBodyNotesMax).optional()
+})
+
+export const ReviewVideoResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List review history for a video (OWNER/ADMIN)
+ */
+export const ListVideoReviewsParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ListVideoReviewsResponse = zod.object({
+  "reviews": zod.array(zod.object({
+  "id": zod.number().int(),
+  "videoId": zod.number().int(),
+  "reviewerId": zod.number().int(),
+  "action": zod.enum(['APPROVED', 'REJECTED']),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary List videos waiting for manual review (OWNER/ADMIN)
+ */
+export const listPendingReviewsQueryLimitDefault = 50;
+export const listPendingReviewsQueryLimitMax = 100;
+
+export const listPendingReviewsQueryOffsetDefault = 0;
+export const listPendingReviewsQueryOffsetMin = 0;
+
+
+
+export const ListPendingReviewsQueryParams = zod.object({
+  "limit": zod.coerce.number().int().min(1).max(listPendingReviewsQueryLimitMax).default(listPendingReviewsQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listPendingReviewsQueryOffsetMin).default(listPendingReviewsQueryOffsetDefault)
+})
+
+export const ListPendingReviewsResponse = zod.object({
+  "videos": zod.array(zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "status": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "durationSeconds": zod.number().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().int().nullish(),
+  "originalFileName": zod.string().nullish(),
+  "storageProvider": zod.string().nullish(),
+  "uploadedBy": zod.number().int(),
+  "categoryIds": zod.array(zod.number().int()),
+  "groupIds": zod.array(zod.number().int()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number().int()
+})
 
 
