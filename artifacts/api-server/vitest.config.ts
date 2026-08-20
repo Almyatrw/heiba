@@ -19,6 +19,9 @@ export default defineConfig({
       LOGIN_RATE_LIMIT: "100000",
       // Uploaded test files go to a scratch dir cleaned by global-setup
       VIDEO_STORAGE_DIR: ".test-storage",
+      // Import tests fetch from a local stub origin on 127.0.0.1; the SSRF
+      // guard would otherwise reject them.
+      HEIBA_IMPORT_ALLOW_PRIVATE_NET: "true",
     },
   },
 });

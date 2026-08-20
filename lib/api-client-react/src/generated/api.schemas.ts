@@ -186,6 +186,19 @@ export interface UpdateCategoryInput {
   description?: string | null;
 }
 
+/**
+ * State of the most recent URL import job (null = none)
+ */
+export type ImportStatusState = typeof ImportStatusState[keyof typeof ImportStatusState] | null;
+
+
+export const ImportStatusState = {
+  QUEUED: 'QUEUED',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+} as const;
+
 export type VideoStatus = typeof VideoStatus[keyof typeof VideoStatus];
 
 
@@ -198,6 +211,16 @@ export const VideoStatus = {
   ARCHIVED: 'ARCHIVED',
   FAILED: 'FAILED',
 } as const;
+
+export interface ImportStatus {
+  /** State of the most recent URL import job (null = none) */
+  state?: ImportStatusState;
+  provider?: string | null;
+  /** User-facing failure detail when state is FAILED */
+  error?: string | null;
+  videoStatus: VideoStatus;
+  updatedAt?: string | null;
+}
 
 export interface Video {
   id: number;

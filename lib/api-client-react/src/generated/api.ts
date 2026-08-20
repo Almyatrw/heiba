@@ -39,6 +39,7 @@ import type {
   GroupMember,
   GroupMemberListResult,
   HealthStatus,
+  ImportStatus,
   ImportVideoBody,
   ListGroupsParams,
   ListLibraryVideosParams,
@@ -2397,8 +2398,8 @@ export const getImportVideoUrl = (id: number,) => {
 }
 
 /**
- * V1 supports direct video file URLs (mp4/webm/mkv/mov) only. Platform providers (YouTube, X, Facebook, Instagram, LinkedIn, TikTok) are recognised but disabled/stubbed — no DRM, paywall, authentication or access-control bypass is performed. The imported file lands in PENDING_REVIEW like an upload.
- * @summary Import the video binary from a direct file URL (OWNER/ADMIN)
+ * Supported sources: direct video file URLs (mp4/webm/mkv/mov), X/Twitter post URLs and YouTube URLs (platform providers must be enabled server side). No DRM, paywall, authentication or access-control bypass is performed. The download runs in the background; the video moves PROCESSING → PENDING_REVIEW on success or → FAILED with the reason in storage_meta. Poll GET /videos/{id}/import-status for progress.
+ * @summary Import the video binary from a URL (OWNER/ADMIN)
  */
 export const importVideo = async (id: number,
     importVideoBody: ImportVideoBody, options?: Parameters<typeof customFetch>[1]): Promise<Video> => {
@@ -2448,7 +2449,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ImportVideoMutationError = ErrorType<Error>
 
     /**
- * @summary Import the video binary from a direct file URL (OWNER/ADMIN)
+ * @summary Import the video binary from a URL (OWNER/ADMIN)
  */
 export const useImportVideo = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importVideo>>, TError,{id: number;data: ImportVideoBody}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -2460,6 +2461,84 @@ export const useImportVideo = <TError = ErrorType<Error>,
       > => {
       return useMutation(getImportVideoMutationOptions(options));
     }
+
+export const getGetImportStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/videos/${id}/import-status`
+}
+
+/**
+ * Reports the state of the most recent URL import for this video: QUEUED / PROCESSING / COMPLETED / FAILED (null when no import has been requested). Falls back to the state persisted in storage_meta, so the answer stays correct after a server restart.
+ * @summary Background URL-import status for a video (OWNER/ADMIN)
+ */
+export const getImportStatus = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<ImportStatus> => {
+
+  return customFetch<ImportStatus>(getGetImportStatusUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetImportStatusQueryKey = (id: number,) => {
+    return [
+    `/api/videos/${id}/import-status`
+    ] as const;
+    }
+
+
+export const getGetImportStatusQueryOptions = <TData = Awaited<ReturnType<typeof getImportStatus>>, TError = ErrorType<Error>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getImportStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetImportStatusQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getImportStatus>>> = ({ signal }) => getImportStatus(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getImportStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetImportStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getImportStatus>>>
+export type GetImportStatusQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Background URL-import status for a video (OWNER/ADMIN)
+ */
+
+export function useGetImportStatus<TData = Awaited<ReturnType<typeof getImportStatus>>, TError = ErrorType<Error>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getImportStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetImportStatusQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetUploadCapabilitiesUrl = (id: number,) => {
 

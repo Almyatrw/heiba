@@ -183,11 +183,45 @@ export function proxyUpload(
   });
 }
 
-/** Import a video binary from a direct file URL via the API. */
+/** Start a background URL import via the API. Returns once the server accepted the job (HTTP 202). */
 export function importFromUrl(videoId: number, url: string): Promise<void> {
   return apiFetch(`/api/videos/${videoId}/import`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ url }),
   });
+}
+
+export interface ImportStatus {
+  state: "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" | null;
+  provider: string | null;
+  error: string | null;
+  videoStatus: string;
+  updatedAt: string | null;
+}
+
+export function getImportStatus(videoId: number): Promise<ImportStatus> {
+  return apiFetch(`/api/videos/${videoId}/import-status`);
+}
+
+const IMPORT_POLL_INTERVAL_MS = 2_000;
+const IMPORT_POLL_TIMEOUT_MS = 10 * 60_000;
+
+/** Polls until the background import finishes; resolves with the final status. */
+export async function waitForImport(
+  videoId: number,
+  onTick?: (status: ImportStatus) => void,
+  signal?: AbortSignal,
+): Promise<ImportStatus> {
+  const deadline = Date.now() + IMPORT_POLL_TIMEOUT_MS;
+  for (;;) {
+    if (signal?.aborted) throw new Error("Import aborted");
+    const status = await getImportStatus(videoId);
+    onTick?.(status);
+    if (status.state === "COMPLETED" || status.state === "FAILED") return status;
+    if (Date.now() > deadline) {
+      throw new Error("Import timed out while waiting for the server");
+    }
+    await new Promise((resolve) => setTimeout(resolve, IMPORT_POLL_INTERVAL_MS));
+  }
 }

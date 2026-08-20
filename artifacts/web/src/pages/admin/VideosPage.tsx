@@ -32,7 +32,9 @@ import {
   directUpload,
   getUploadCapabilities,
   importFromUrl,
+  waitForImport,
   proxyUpload,
+  type ImportStatus,
   type UploadProgress,
 } from "@/lib/upload";
 
@@ -99,6 +101,7 @@ function UploadModal({
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [busy, setBusy] = useState(false);
+  const [importState, setImportState] = useState<ImportStatus["state"] | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -136,14 +139,21 @@ function UploadModal({
     if (!url.trim()) return;
     setError(null);
     setBusy(true);
+    setImportState("QUEUED");
     try {
       await importFromUrl(video.id, url.trim());
+      const final = await waitForImport(video.id, (s) => setImportState(s.state));
+      if (final.state === "FAILED") {
+        setError(final.error ?? t("upload.importFailed"));
+        return;
+      }
       await onDone();
       onClose();
     } catch (err) {
       setError(apiErrorMessage(err, t("upload.importFailed")));
     } finally {
       setBusy(false);
+      setImportState(null);
     }
   };
 
@@ -236,6 +246,18 @@ function UploadModal({
                 placeholder={t("upload.importUrlPlaceholder")}
               />
             </Field>
+            {importState && busy ? (
+              <div className="flex items-center gap-2 rounded-lg border border-line bg-panel-2 px-3 py-2">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-ember" />
+                <span className="font-mono text-[11px] text-muted">
+                  {t(
+                    importState === "QUEUED"
+                      ? "upload.importQueued"
+                      : "upload.importProcessing",
+                  )}
+                </span>
+              </div>
+            ) : null}
           </>
         )}
 

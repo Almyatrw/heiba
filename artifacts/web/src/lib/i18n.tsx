@@ -156,11 +156,19 @@ const DICTIONARY = {
     en: "https://example.com/video.mp4",
   },
   "upload.importHint": {
-    ar: "روابط ملفات الفيديو المباشرة فقط (mp4/webm/mkv/mov). يوتيوب ومنصات التواصل غير مدعومة في هذا الإصدار.",
-    en: "Direct video file URLs only (mp4/webm/mkv/mov). YouTube and social platforms are not supported in V1.",
+    ar: "روابط فيديو مباشرة (mp4/webm/mkv/mov)، وروابط X ويوتيوب عند تفعيلها على الخادم.",
+    en: "Direct video URLs (mp4/webm/mkv/mov), plus X/YouTube when enabled on the server.",
   },
   "upload.import": { ar: "استيراد", en: "Import" },
   "upload.importing": { ar: "جارٍ الاستيراد…", en: "Importing…" },
+  "upload.importQueued": {
+    ar: "في الانتظار — بدأ الاستيراد في الخلفية…",
+    en: "Queued — the import is starting in the background…",
+  },
+  "upload.importProcessing": {
+    ar: "جارٍ الاستيراد — يتم تنزيل الفيديو وتخزينه…",
+    en: "Importing — downloading and storing the video…",
+  },
   "upload.importFailed": { ar: "فشل الاستيراد", en: "Import failed" },
 
   "reviews.kicker": { ar: "مراجعة يدوية", en: "Manual review" },

@@ -29,6 +29,8 @@ export * from './groupMember';
 export * from './groupMemberListResult';
 export * from './groupRole';
 export * from './healthStatus';
+export * from './importStatus';
+export * from './importStatusState';
 export * from './importVideoBody';
 export * from './listGroupsParams';
 export * from './listLibraryVideosParams';

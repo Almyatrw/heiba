@@ -357,6 +357,28 @@ components:
           type: string
           maxLength: 1000
           nullable: true
+    ImportStatus:
+      type: object
+      required: [videoStatus]
+      properties:
+        state:
+          type: string
+          enum: [QUEUED, PROCESSING, COMPLETED, FAILED]
+          nullable: true
+          description: State of the most recent URL import job (null = none)
+        provider:
+          type: string
+          nullable: true
+        error:
+          type: string
+          nullable: true
+          description: User-facing failure detail when state is FAILED
+        videoStatus:
+          $ref: "#/components/schemas/VideoStatus"
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
     VideoStatus:
       type: string
       enum: [PROCESSING, PENDING_REVIEW, APPROVED, REJECTED, PRIVATE, ARCHIVED, FAILED]
@@ -1711,13 +1733,14 @@ paths:
     post:
       operationId: importVideo
       tags: [videos]
-      summary: Import the video binary from a direct file URL (OWNER/ADMIN)
+      summary: Import the video binary from a URL (OWNER/ADMIN)
       description: >-
-        V1 supports direct video file URLs (mp4/webm/mkv/mov) only. Platform
-        providers (YouTube, X, Facebook, Instagram, LinkedIn, TikTok) are
-        recognised but disabled/stubbed — no DRM, paywall, authentication or
-        access-control bypass is performed. The imported file lands in
-        PENDING_REVIEW like an upload.
+        Supported sources: direct video file URLs (mp4/webm/mkv/mov), X/Twitter
+        post URLs and YouTube URLs (platform providers must be enabled server
+        side). No DRM, paywall, authentication or access-control bypass is
+        performed. The download runs in the background; the video moves
+        PROCESSING → PENDING_REVIEW on success or → FAILED with the reason in
+        storage_meta. Poll GET /videos/{id}/import-status for progress.
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -1739,8 +1762,8 @@ paths:
                   type: string
                   format: uri
       responses:
-        "200":
-          description: Import stored; video is now PENDING_REVIEW
+        "202":
+          description: Import queued; video is PROCESSING
           content:
             application/json:
               schema:
@@ -1751,6 +1774,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Video not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /videos/{id}/import-status:
+    get:
+      operationId: getImportStatus
+      tags: [videos]
+      summary: Background URL-import status for a video (OWNER/ADMIN)
+      description: >-
+        Reports the state of the most recent URL import for this video:
+        QUEUED / PROCESSING / COMPLETED / FAILED (null when no import has
+        been requested). Falls back to the state persisted in storage_meta,
+        so the answer stays correct after a server restart.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Current import job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportStatus"
         "401":
           description: Unauthenticated
           content:

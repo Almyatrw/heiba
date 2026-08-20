@@ -655,8 +655,8 @@ export const UploadVideoFileResponse = zod.object({
 
 
 /**
- * V1 supports direct video file URLs (mp4/webm/mkv/mov) only. Platform providers (YouTube, X, Facebook, Instagram, LinkedIn, TikTok) are recognised but disabled/stubbed — no DRM, paywall, authentication or access-control bypass is performed. The imported file lands in PENDING_REVIEW like an upload.
- * @summary Import the video binary from a direct file URL (OWNER/ADMIN)
+ * Supported sources: direct video file URLs (mp4/webm/mkv/mov), X/Twitter post URLs and YouTube URLs (platform providers must be enabled server side). No DRM, paywall, authentication or access-control bypass is performed. The download runs in the background; the video moves PROCESSING → PENDING_REVIEW on success or → FAILED with the reason in storage_meta. Poll GET /videos/{id}/import-status for progress.
+ * @summary Import the video binary from a URL (OWNER/ADMIN)
  */
 export const ImportVideoParams = zod.object({
   "id": zod.coerce.number().int()
@@ -682,6 +682,23 @@ export const ImportVideoResponse = zod.object({
   "groupIds": zod.array(zod.number().int()),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Reports the state of the most recent URL import for this video: QUEUED / PROCESSING / COMPLETED / FAILED (null when no import has been requested). Falls back to the state persisted in storage_meta, so the answer stays correct after a server restart.
+ * @summary Background URL-import status for a video (OWNER/ADMIN)
+ */
+export const GetImportStatusParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetImportStatusResponse = zod.object({
+  "state": zod.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED']).nullish().describe('State of the most recent URL import job (null = none)'),
+  "provider": zod.string().nullish(),
+  "error": zod.string().nullish().describe('User-facing failure detail when state is FAILED'),
+  "videoStatus": zod.enum(['PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'PRIVATE', 'ARCHIVED', 'FAILED']),
+  "updatedAt": zod.coerce.date().nullish()
 })
 
 

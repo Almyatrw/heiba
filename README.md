@@ -41,6 +41,25 @@ WEB_DIST=$PWD/artifacts/web/dist PORT=5000 node artifacts/api-server/dist/index.
 Bootstrap the first owner account via `OWNER_EMAIL` / `OWNER_PASSWORD` env vars
 (created once at startup if absent).
 
+## URL import providers
+
+`POST /api/videos/:id/import` accepts three kinds of URLs, each handled by its
+own provider behind the `VideoImportProvider` interface (new providers plug in
+without touching the pipeline):
+
+| Source | Enable flag | Extra requirements |
+| --- | --- | --- |
+| Direct video file URLs (mp4/webm/mkv/mov) | always on | — |
+| X/Twitter post URLs | `HEIBA_ENABLE_X_IMPORT=true` | `yt-dlp` + `ffmpeg` on the server; X blocks guest extraction from datacenter IPs, so production needs `HEIBA_X_COOKIES_FILE=/path/to/x-cookies.txt` (Netscape cookies.txt exported from a logged-in X session; read by the importer process only, never logged or stored) |
+| YouTube URLs | `HEIBA_ENABLE_YOUTUBE_IMPORT=true` | `yt-dlp` + `ffmpeg` (ffmpeg merges split DASH video+audio into one mp4) |
+
+All imports run in the background (HTTP 202) and converge on the same
+pipeline as file uploads: the video is `PROCESSING` while downloading, lands
+in `PENDING_REVIEW` on success, or `FAILED` with the reason persisted in
+`storage_meta` and surfaced in the UI. Import fetches refuse URLs resolving
+to private/reserved network ranges (SSRF guard); set
+`HEIBA_IMPORT_ALLOW_PRIVATE_NET=true` only in trusted private networks.
+
 ## Object storage (R2)
 
 Binaries are always behind the [`VideoStorage`](artifacts/api-server/src/lib/storage/index.ts)
@@ -75,7 +94,7 @@ with Orval.
 - `GET/POST /api/groups` · `GET/PATCH/DELETE /api/groups/:id` · members: `GET/POST/PATCH/DELETE /api/groups/:id/members[/:userId]`
 - `GET/POST /api/categories` · `PATCH/DELETE /api/categories/:id`
 - `GET/POST /api/videos` · `GET/PATCH/DELETE /api/videos/:id` · `POST /api/videos/:id/file` (multipart, dev)
-- `POST /api/videos/:id/import` (direct file URLs)
+- `POST /api/videos/:id/import` — async background import (202). Sources: direct video file URLs, X/Twitter post URLs and YouTube URLs (each gated by a server flag). `GET /api/videos/:id/import-status` reports QUEUED/PROCESSING/COMPLETED/FAILED plus the failure detail.
 - `GET /api/videos/:id/upload-capabilities` · `POST /api/videos/:id/direct-upload` · `POST /api/videos/:id/direct-upload/:uploadId/complete|abort` (presigned uploads)
 - `GET /api/reviews/pending` · `POST /api/videos/:id/review` · `GET /api/videos/:id/reviews`
 - `GET /api/library/videos[/:id]` (member-scoped) · `GET /api/stream/:id` (Range-aware)
